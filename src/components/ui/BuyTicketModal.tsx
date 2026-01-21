@@ -23,7 +23,7 @@ import { createSnapToken } from "@/actions/midtrans";
 import type { MidtransSnapResult } from "@/types/midtrans";
 
 export type EventData = {
-  id: number;
+  id: number | string; // Support both number (legacy) and string (UUID)
   title: string;
   date: string;
   time: string;
