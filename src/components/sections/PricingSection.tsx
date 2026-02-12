@@ -4,6 +4,17 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Check, Zap, Crown, Star, Ticket } from "lucide-react";
 
+type PricingCategoryInput = {
+  id: number;
+  name: string;
+  price: number;
+  description: string | null;
+  features: string[];
+  sort_order: number;
+  is_active: boolean;
+  ticket_stocks: { remaining_stock: number } | null;
+};
+
 type PricingTier = {
   id: number;
   name: string;
@@ -14,9 +25,18 @@ type PricingTier = {
   popular: boolean;
   icon: React.ReactNode;
   color: string;
+  spotsLeft: number;
 };
 
-const PRICING_TIERS: PricingTier[] = [
+type PricingSectionProps = {
+  /** Categories with stock — from server or landing event */
+  dbCategories?: PricingCategoryInput[];
+  /** Callback when user clicks "Beli Sekarang" for a category */
+  onBuyCategory?: (categoryId: number) => void;
+};
+
+// Fallback static pricing when DB not yet seeded
+const FALLBACK_TIERS: PricingTier[] = [
   {
     id: 1,
     name: "Regular",
@@ -32,6 +52,7 @@ const PRICING_TIERS: PricingTier[] = [
     popular: false,
     icon: <Ticket className="h-6 w-6" />,
     color: "from-gray-500 to-gray-600",
+    spotsLeft: 100,
   },
   {
     id: 2,
@@ -50,6 +71,7 @@ const PRICING_TIERS: PricingTier[] = [
     popular: true,
     icon: <Crown className="h-6 w-6" />,
     color: "from-sun6bks-gold to-sun6bks-orange",
+    spotsLeft: 50,
   },
   {
     id: 3,
@@ -70,16 +92,65 @@ const PRICING_TIERS: PricingTier[] = [
     popular: false,
     icon: <Star className="h-6 w-6" />,
     color: "from-purple-500 to-pink-500",
+    spotsLeft: 20,
   },
 ];
+
+const TIER_ICONS: Record<string, React.ReactNode> = {
+  regular: <Ticket className="h-6 w-6" />,
+  "early bird": <Zap className="h-6 w-6" />,
+  presale: <Ticket className="h-6 w-6" />,
+  normal: <Ticket className="h-6 w-6" />,
+  premium: <Crown className="h-6 w-6" />,
+  vip: <Star className="h-6 w-6" />,
+};
+
+const TIER_COLORS: Record<string, string> = {
+  regular: "from-gray-500 to-gray-600",
+  "early bird": "from-emerald-500 to-teal-500",
+  presale: "from-blue-500 to-indigo-500",
+  normal: "from-gray-500 to-gray-600",
+  premium: "from-sun6bks-gold to-sun6bks-orange",
+  vip: "from-purple-500 to-pink-500",
+};
+
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
+
+const mapDbCategoriesToTiers = (
+  categories: PricingCategoryInput[]
+): PricingTier[] => {
+  return categories
+    .filter((c) => c.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((category, index) => {
+      const nameLower = category.name.toLowerCase();
+      return {
+        id: category.id,
+        name: category.name,
+        price: formatPrice(category.price),
+        priceNum: category.price,
+        description: category.description || "",
+        features: category.features,
+        popular: nameLower === "premium" || index === 1,
+        icon: TIER_ICONS[nameLower] || <Ticket className="h-6 w-6" />,
+        color: TIER_COLORS[nameLower] || "from-gray-500 to-gray-600",
+        spotsLeft: category.ticket_stocks?.remaining_stock ?? 0,
+      };
+    });
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
+    transition: { staggerChildren: 0.15 },
   },
 };
 
@@ -91,14 +162,22 @@ const cardVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
     },
   },
 };
 
-export const PricingSection = () => {
+export const PricingSection = ({
+  dbCategories,
+  onBuyCategory,
+}: PricingSectionProps) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+
+  const tiers =
+    dbCategories && dbCategories.length > 0
+      ? mapDbCategoriesToTiers(dbCategories)
+      : FALLBACK_TIERS;
 
   return (
     <section
@@ -121,7 +200,7 @@ export const PricingSection = () => {
           className="mb-16 text-center"
         >
           <span className="mb-4 inline-block rounded-full bg-sun6bks-gold/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-sun6bks-gold">
-            💰 Harga
+            Harga
           </span>
           <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
             Pilih{" "}
@@ -130,7 +209,8 @@ export const PricingSection = () => {
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-400">
-            Harga terjangkau untuk pengalaman komedi premium. Pilih paket yang sesuai kebutuhanmu!
+            Harga terjangkau untuk pengalaman komedi premium. Pilih paket yang
+            sesuai kebutuhanmu!
           </p>
         </motion.div>
 
@@ -141,7 +221,7 @@ export const PricingSection = () => {
           animate={isInView ? "visible" : "hidden"}
           className="grid gap-8 md:grid-cols-3"
         >
-          {PRICING_TIERS.map((tier) => (
+          {tiers.map((tier) => (
             <motion.div
               key={tier.id}
               variants={cardVariants}
@@ -209,20 +289,40 @@ export const PricingSection = () => {
               </ul>
 
               {/* CTA Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`w-full rounded-xl py-4 font-bold transition-all ${
-                  tier.popular
-                    ? "bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 hover:shadow-sun6bks-gold/40"
-                    : "border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  Beli Sekarang
-                </span>
-              </motion.button>
+              {onBuyCategory ? (
+                <motion.button
+                  onClick={() => onBuyCategory(tier.id)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`block w-full rounded-xl py-4 font-bold transition-all ${
+                    tier.popular
+                      ? "bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 hover:shadow-sun6bks-gold/40"
+                      : "border border-white/20 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Beli Sekarang
+                  </span>
+                </motion.button>
+              ) : (
+                <a href="#events" className="block">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-full rounded-xl py-4 font-bold transition-all ${
+                      tier.popular
+                        ? "bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 hover:shadow-sun6bks-gold/40"
+                        : "border border-white/20 bg-white/5 text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Beli Sekarang
+                    </span>
+                  </motion.button>
+                </a>
+              )}
 
               {/* Hover Glow Effect */}
               {tier.popular && (

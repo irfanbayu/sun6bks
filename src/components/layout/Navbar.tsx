@@ -11,7 +11,11 @@ const NAV_LINKS = [
   { name: "Pricing", href: "#pricing" },
 ];
 
-export const Navbar = () => {
+type NavbarProps = {
+  onBuyTicket?: () => void;
+};
+
+export const Navbar = ({ onBuyTicket }: NavbarProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -29,6 +33,15 @@ export const Navbar = () => {
     const element = document.querySelector(href);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleBuyTicket = () => {
+    setIsMobileMenuOpen(false);
+    if (onBuyTicket) {
+      onBuyTicket();
+    } else {
+      handleNavClick("#events");
     }
   };
 
@@ -85,6 +98,7 @@ export const Navbar = () => {
                 </motion.a>
               ))}
               <motion.button
+                onClick={handleBuyTicket}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center gap-2 rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange px-5 py-2 text-sm font-bold text-sun6bks-dark shadow-lg shadow-sun6bks-gold/20"
@@ -139,13 +153,14 @@ export const Navbar = () => {
                   </motion.a>
                 ))}
                 <motion.button
+                  onClick={handleBuyTicket}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange py-3 font-bold text-sun6bks-dark"
                 >
                   <Ticket className="h-5 w-5" />
-                  Beli Tiket Rp50K
+                  Beli Tiket
                 </motion.button>
               </div>
             </div>

@@ -3,8 +3,45 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown, Mic2, Sparkles } from "lucide-react";
+import type { LandingEvent } from "@/types";
 
-export const HeroSection = () => {
+const formatPrice = (price: number): string =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+
+const formatDateBadge = (isoDate: string, timeLabel: string): string => {
+  try {
+    const d = new Date(isoDate);
+    const day = d.getDate();
+    const month = d.toLocaleDateString("id-ID", { month: "long" }).toUpperCase();
+    const year = d.getFullYear();
+    return `🎤 ${day} ${month} ${year} • ${timeLabel}`;
+  } catch {
+    return `🎤 ${timeLabel}`;
+  }
+};
+
+/** Deterministic positions for particles (index-based, no Math.random) */
+const PARTICLE_POSITIONS = [...Array(20)].map((_, i) => ({
+  left: ((i * 7 + 13) % 100),
+  top: ((i * 11 + 17) % 100),
+  duration: 3 + (i % 3),
+  delay: (i % 5) * 0.4,
+}));
+
+type HeroSectionProps = {
+  landingEvent: LandingEvent | null;
+  onBuyTicket?: () => void;
+};
+
+export const HeroSection = ({
+  landingEvent,
+  onBuyTicket,
+}: HeroSectionProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -22,42 +59,54 @@ export const HeroSection = () => {
     }
   };
 
+  const handleCtaClick = () => {
+    if (onBuyTicket) {
+      onBuyTicket();
+    } else {
+      const eventsSection = document.getElementById("events");
+      if (eventsSection) {
+        eventsSection.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  const dateBadge = landingEvent
+    ? formatDateBadge(landingEvent.date, landingEvent.time_label)
+    : "🎤 20 JANUARI 2026 • 20:00 WIB";
+
+  const cheapestPrice = landingEvent?.categories.length
+    ? Math.min(...landingEvent.categories.map((c) => c.price))
+    : 50000;
+  const ctaLabel = `Beli Tiket ${formatPrice(cheapestPrice)}`;
+
   return (
     <section
       ref={containerRef}
       id="hero"
       className="relative min-h-screen overflow-hidden bg-sun6bks-dark"
     >
-      {/* Animated Background Pattern */}
       <motion.div
         style={{ y: backgroundY }}
         className="absolute inset-0 z-0"
       >
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-sun6bks-dark via-sun6bks-dark/90 to-sun6bks-dark" />
-        
-        {/* Animated Grid Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(255, 215, 0, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 215, 0, 0.1) 1px, transparent 1px)
-              `,
-              backgroundSize: "50px 50px",
-            }}
-          />
-        </div>
-
-        {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255, 215, 0, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 215, 0, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: "50px 50px",
+          }}
+        />
+        {PARTICLE_POSITIONS.map((p, i) => (
           <motion.div
             key={i}
             className="absolute h-1 w-1 rounded-full bg-sun6bks-gold"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${p.left}%`,
+              top: `${p.top}%`,
             }}
             animate={{
               y: [0, -30, 0],
@@ -65,20 +114,18 @@ export const HeroSection = () => {
               scale: [1, 1.5, 1],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: p.duration,
               repeat: Infinity,
-              delay: Math.random() * 2,
+              delay: p.delay,
             }}
           />
         ))}
       </motion.div>
 
-      {/* Main Content */}
       <motion.div
         style={{ y: textY, opacity }}
         className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center"
       >
-        {/* Mic Icon with Glow */}
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
@@ -91,7 +138,6 @@ export const HeroSection = () => {
           </div>
         </motion.div>
 
-        {/* Main Title */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -119,7 +165,6 @@ export const HeroSection = () => {
           </span>
         </motion.h1>
 
-        {/* Event Date Badge */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -127,37 +172,35 @@ export const HeroSection = () => {
           className="mb-8 rounded-full border border-sun6bks-gold/30 bg-sun6bks-gold/10 px-6 py-3 backdrop-blur-sm"
         >
           <p className="text-lg font-bold text-sun6bks-gold md:text-xl">
-            🎤 20 JANUARI 2026 • 20:00 WIB
+            {dateBadge}
           </p>
         </motion.div>
 
-        {/* Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.9 }}
           className="mb-12 max-w-lg text-lg text-gray-300 md:text-xl"
         >
-          Malam komedi terbaik di Bekasi! 
+          Malam komedi terbaik di Bekasi!
           <br className="hidden md:block" />
           Ketawa bareng komedian lokal berbakat.
         </motion.p>
 
-        {/* CTA Button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.1 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={handleCtaClick}
           className="group relative overflow-hidden rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange px-8 py-4 text-lg font-bold text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 transition-all duration-300 hover:shadow-sun6bks-gold/40 md:px-10 md:py-5 md:text-xl"
         >
-          <span className="relative z-10">Beli Tiket Rp50K</span>
+          <span className="relative z-10">{ctaLabel}</span>
           <div className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-300 group-hover:translate-x-0" />
         </motion.button>
       </motion.div>
 
-      {/* Scroll Indicator */}
       <motion.button
         onClick={handleScrollDown}
         initial={{ opacity: 0 }}

@@ -32,6 +32,7 @@ declare global {
 
 export type CreateTransactionParams = {
   eventId: number;
+  categoryId: number;
   eventTitle: string;
   quantity: number;
   pricePerTicket: number;

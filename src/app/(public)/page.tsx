@@ -1,30 +1,17 @@
-"use client";
+import { getLandingEvent } from "@/actions/events";
+import HomePageClient from "./client";
 
-import { SmoothScrollProvider } from "@/components/providers";
-import { Navbar } from "@/components/layout";
-import {
-  HeroSection,
-  EventsSection,
-  PerformersSection,
-  VenuesSection,
-  PricingSection,
-  FooterSection,
-} from "@/components/sections";
+// Data depends on Supabase at runtime — skip static pre-render
+export const dynamic = "force-dynamic";
 
-const HomePage = () => {
-  return (
-    <SmoothScrollProvider>
-      <Navbar />
-      <main className="bg-sun6bks-dark">
-        <HeroSection />
-        <EventsSection />
-        <PerformersSection />
-        <VenuesSection />
-        <PricingSection />
-        <FooterSection />
-      </main>
-    </SmoothScrollProvider>
-  );
+/**
+ * Public landing page — Server Component.
+ * Fetches single event (SINGLE_EVENT_SLUG or nearest) and passes to client.
+ */
+const HomePage = async () => {
+  const landingEvent = await getLandingEvent();
+
+  return <HomePageClient landingEvent={landingEvent} />;
 };
 
 export default HomePage;
