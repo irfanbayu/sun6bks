@@ -62,7 +62,9 @@ export type {
   DbTicket,
   DbAuditLog,
   DbWebhookPayload,
+  DbUserProfile,
   EventWithCategories,
   TransactionStatus,
   TicketStatus,
+  UserRole,
 } from "@/lib/supabase/types";

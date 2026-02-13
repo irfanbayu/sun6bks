@@ -1,10 +1,8 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth";
 import type { EventWithCategories } from "@/lib/supabase/types";
-
-const ADMIN_EMAIL = "project.irfanbayu@gmail.com";
 
 type ActionResult = {
   success: boolean;
@@ -37,23 +35,6 @@ export type EventInput = {
   image_url: string;
   is_published: boolean;
   categories: CategoryInput[];
-};
-
-/**
- * Verify the caller is an admin. Returns admin info or throws.
- */
-const requireAdmin = async () => {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Not authenticated");
-
-  const user = await currentUser();
-  const email = user?.emailAddresses.find(
-    (e) => e.id === user.primaryEmailAddressId,
-  )?.emailAddress;
-
-  if (email !== ADMIN_EMAIL) throw new Error("Not authorized");
-
-  return { userId, email };
 };
 
 /**

@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -18,6 +19,7 @@ import {
   User,
   Mail,
   Phone,
+  LogIn,
 } from "lucide-react";
 import { createOrderAndSnapToken } from "@/actions/midtrans";
 import { MidtransProvider } from "@/components/providers/MidtransProvider";
@@ -82,6 +84,8 @@ export const BuyTicketModal = ({
   onQuantityChange,
 }: BuyTicketModalProps) => {
   const router = useRouter();
+  const { isSignedIn, user } = useUser();
+  const clerk = useClerk();
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const [paymentMessage, setPaymentMessage] = useState("");
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
@@ -112,7 +116,7 @@ export const BuyTicketModal = ({
     };
   }, [isOpen, handleKeyDown]);
 
-  // Reset state when modal opens + check Snap readiness
+  // Reset state when modal opens + check Snap readiness + pre-fill from Clerk
   useEffect(() => {
     if (isOpen) {
       setPaymentStatus("idle");
@@ -120,8 +124,20 @@ export const BuyTicketModal = ({
       setErrors({});
       // Check if Snap is already loaded
       setSnapReady(!!window.snap);
+
+      // Pre-fill customer details from Clerk user
+      if (isSignedIn && user) {
+        setCustomerDetails((prev) => ({
+          name: prev.name || user.fullName || user.firstName || "",
+          email:
+            prev.email ||
+            user.primaryEmailAddress?.emailAddress ||
+            "",
+          phone: prev.phone,
+        }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isSignedIn, user]);
 
   // Poll for Snap readiness when modal is open
   useEffect(() => {
@@ -190,6 +206,13 @@ export const BuyTicketModal = ({
 
   const handleCheckout = async () => {
     if (!event) return;
+
+    // Require login before payment
+    if (!isSignedIn) {
+      clerk.redirectToSignIn({ afterSignInUrl: window.location.href });
+      return;
+    }
+
     if (!validateForm()) return;
 
     setPaymentStatus("loading");
@@ -205,6 +228,7 @@ export const BuyTicketModal = ({
         customerName: customerDetails.name.trim(),
         customerEmail: customerDetails.email.trim(),
         customerPhone: customerDetails.phone.trim(),
+        clerkUserId: user?.id,
       });
 
       if (!response.success || !response.token || !response.orderId) {
@@ -500,6 +524,24 @@ export const BuyTicketModal = ({
                   </div>
                 </div>
 
+                {/* Login prompt when not signed in */}
+                {!isSignedIn && (
+                  <div className="mb-4 flex items-center gap-3 rounded-xl bg-sun6bks-gold/5 border border-sun6bks-gold/20 p-4">
+                    <LogIn className="h-5 w-5 flex-shrink-0 text-sun6bks-gold" />
+                    <p className="text-sm text-gray-300">
+                      Anda perlu{" "}
+                      <button
+                        type="button"
+                        onClick={() => clerk.redirectToSignIn({ afterSignInUrl: window.location.href })}
+                        className="font-semibold text-sun6bks-gold underline underline-offset-2 hover:text-sun6bks-orange"
+                      >
+                        masuk
+                      </button>{" "}
+                      terlebih dahulu untuk melanjutkan pembayaran.
+                    </p>
+                  </div>
+                )}
+
                 {/* Checkout Button */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -512,6 +554,11 @@ export const BuyTicketModal = ({
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Memproses...
+                    </>
+                  ) : !isSignedIn ? (
+                    <>
+                      <LogIn className="h-5 w-5" />
+                      Masuk & Bayar
                     </>
                   ) : (
                     <>

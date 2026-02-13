@@ -1,11 +1,14 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Admin routes require authentication
+// Protected routes require authentication
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isUserRoute = createRouteMatcher(["/user(.*)"]);
 
 // Public routes (no auth needed)
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
   "/payment/(.*)",
   "/midtrans/callback",
   "/api/transactions/(.*)",
@@ -13,7 +16,7 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-  if (isAdminRoute(request)) {
+  if (isAdminRoute(request) || isUserRoute(request)) {
     await auth.protect();
   }
 });

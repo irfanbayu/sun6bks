@@ -51,10 +51,7 @@ export const FooterSection = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer
-      id="footer"
-      className="relative overflow-hidden bg-sun6bks-dark"
-    >
+    <footer id="footer" className="relative overflow-hidden bg-sun6bks-dark">
       {/* CTA Section */}
       <div className="relative border-b border-white/10 py-20">
         {/* Background Glow */}
@@ -78,7 +75,8 @@ export const FooterSection = () => {
               Siap Ketawa Bareng?
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-gray-400">
-              Join komunitas stand-up comedy terbesar di Bekasi. Event seru, komunitas asik!
+              Join komunitas stand-up comedy terbesar di Bekasi. Event seru,
+              komunitas asik!
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -127,7 +125,8 @@ export const FooterSection = () => {
               </div>
             </div>
             <p className="mb-6 text-sm text-gray-400">
-              Komunitas stand-up comedy Bekasi. Tempat berkumpulnya pecinta komedi dan komedian lokal berbakat.
+              Komunitas stand-up comedy Bekasi. Tempat berkumpulnya pecinta
+              komedi dan komedian lokal berbakat.
             </p>
             <div className="flex gap-3">
               {SOCIAL_LINKS.map((social) => (
@@ -230,7 +229,9 @@ export const FooterSection = () => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-gray-500 md:flex-row"
         >
-          <p>© {currentYear} SUN 6 BKS | Standupindo Bekasi. All rights reserved.</p>
+          <p>
+            © {currentYear} SUN 6 BKS | Standupindo Bekasi. All rights reserved.
+          </p>
           <p className="flex items-center gap-1">
             Made with <Heart className="h-4 w-4 text-red-500" /> di Bekasi
           </p>

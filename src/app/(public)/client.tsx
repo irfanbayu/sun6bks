@@ -14,6 +14,7 @@ import type { LandingEvent } from "@/types";
 
 type HomePageClientProps = {
   landingEvent: LandingEvent | null;
+  isAdmin?: boolean;
 };
 
 const formatDate = (isoDate: string): string => {
@@ -58,7 +59,7 @@ const buildEventDataMap = (
   return map;
 };
 
-const HomePageClient = ({ landingEvent }: HomePageClientProps) => {
+const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventData, setSelectedEventData] = useState<EventData | null>(
     null
@@ -103,7 +104,7 @@ const HomePageClient = ({ landingEvent }: HomePageClientProps) => {
 
   return (
     <SmoothScrollProvider>
-      <Navbar onBuyTicket={landingEvent ? () => handleOpenCheckout() : undefined} />
+      <Navbar onBuyTicket={landingEvent ? () => handleOpenCheckout() : undefined} isAdmin={isAdmin} />
       <main className="bg-sun6bks-dark">
         <HeroSection
           landingEvent={landingEvent}

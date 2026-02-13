@@ -1,8 +1,9 @@
 // Database types for SUN 6 BKS
-// These mirror the Supabase schema defined in supabase/migrations/001_initial_schema.sql
+// These mirror the Supabase schema defined in supabase/migrations/
 
 export type TransactionStatus = "pending" | "paid" | "expired" | "failed" | "refunded";
 export type TicketStatus = "inactive" | "active" | "used" | "cancelled";
+export type UserRole = "ADMIN" | "USER";
 
 export type DbEvent = {
   id: number;
@@ -44,6 +45,16 @@ export type DbTicketStock = {
   updated_at: string;
 };
 
+export type DbUserProfile = {
+  id: number;
+  clerk_user_id: string;
+  name: string | null;
+  email: string | null;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+};
+
 export type DbTransaction = {
   id: number;
   midtrans_order_id: string;
@@ -57,6 +68,7 @@ export type DbTransaction = {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  clerk_user_id: string | null;
   paid_at: string | null;
   expired_at: string | null;
   created_at: string;

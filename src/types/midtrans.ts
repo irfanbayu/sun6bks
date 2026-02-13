@@ -39,6 +39,7 @@ export type CreateTransactionParams = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  clerkUserId?: string;
 };
 
 export type SnapTokenResponse = {

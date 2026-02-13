@@ -1,7 +1,7 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth";
 import {
   getCoreApi,
   mapMidtransStatus,
@@ -9,29 +9,10 @@ import {
 } from "@/lib/midtrans/server";
 import { generateTicketCode } from "@/lib/tickets";
 
-const ADMIN_EMAIL = "project.irfanbayu@gmail.com";
-
 type ActionResult = {
   success: boolean;
   message: string;
   newStatus?: string;
-};
-
-/**
- * Verify the caller is an admin. Returns admin info or throws.
- */
-const requireAdmin = async () => {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Not authenticated");
-
-  const user = await currentUser();
-  const email = user?.emailAddresses.find(
-    (e) => e.id === user.primaryEmailAddressId,
-  )?.emailAddress;
-
-  if (email !== ADMIN_EMAIL) throw new Error("Not authorized");
-
-  return { userId, email };
 };
 
 /**
@@ -169,6 +150,20 @@ export const manualOverride = async (
       return {
         success: false,
         message: `Tidak bisa override dari status ${transaction.status}.`,
+      };
+    }
+
+    // Validate stock availability before creating tickets
+    const { data: stock } = await supabaseAdmin
+      .from("ticket_stocks")
+      .select("remaining_stock")
+      .eq("category_id", transaction.category_id)
+      .single();
+
+    if (!stock || stock.remaining_stock < transaction.quantity) {
+      return {
+        success: false,
+        message: `Stok tidak mencukupi. Tersisa: ${stock?.remaining_stock ?? 0}, dibutuhkan: ${transaction.quantity}.`,
       };
     }
 

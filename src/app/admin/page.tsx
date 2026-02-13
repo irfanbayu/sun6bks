@@ -79,7 +79,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <a
           href="/admin/transactions"
           className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
@@ -100,6 +100,17 @@ export default async function AdminDashboardPage() {
           </h3>
           <p className="text-sm text-gray-400">
             Tambah, edit, hapus events dan kategori tiket.
+          </p>
+        </a>
+        <a
+          href="/admin/users"
+          className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
+        >
+          <h3 className="mb-2 text-lg font-bold text-white">
+            Kelola Users
+          </h3>
+          <p className="text-sm text-gray-400">
+            Promote / demote role user dan lihat daftar user terdaftar.
           </p>
         </a>
       </div>

@@ -117,6 +117,7 @@ export const createOrderAndSnapToken = async (
         customer_name: params.customerName.trim(),
         customer_email: params.customerEmail.trim(),
         customer_phone: params.customerPhone.trim(),
+        ...(params.clerkUserId ? { clerk_user_id: params.clerkUserId } : {}),
       });
 
     if (insertError) {
