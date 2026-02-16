@@ -133,7 +133,7 @@ export const EventsSection = ({
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-sun6bks-gold" />
                   <span className="truncate">
-                    {landingEvent.performers.join(", ")}
+                    {landingEvent.performers.map((p) => p.name).join(", ")}
                   </span>
                 </div>
               </div>

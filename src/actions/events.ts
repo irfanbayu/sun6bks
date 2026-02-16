@@ -12,7 +12,12 @@ const mapToLandingEvent = (ev: EventWithCategories): LandingEvent => {
     date: ev.date,
     time_label: ev.time_label,
     venue: ev.venue,
-    performers: ev.performers ?? [],
+    performers: (ev.performers ?? []).map((p) => ({
+      name: p.name ?? "",
+      image: p.image ?? "",
+      instagram: p.instagram ?? "",
+      youtube: p.youtube ?? "",
+    })),
     categories: activeCategories
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((c) => ({

@@ -31,7 +31,7 @@ export type EventData = {
   date: string;
   time: string;
   venue: string;
-  performers: string[];
+  performers: { name: string }[];
   categoryId: number;
   categoryName: string;
   price: string;
@@ -393,7 +393,7 @@ export const BuyTicketModal = ({
                   <div className="col-span-2 flex items-center gap-2">
                     <Users className="h-4 w-4 text-sun6bks-gold" />
                     <span className="truncate">
-                      {event.performers.join(", ")}
+                      {event.performers.map((p) => p.name).join(", ")}
                     </span>
                   </div>
                 </div>

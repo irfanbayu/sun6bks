@@ -114,7 +114,7 @@ const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
           landingEvent={landingEvent}
           onBuyCategory={handleOpenCheckout}
         />
-        <PerformersSection />
+        <PerformersSection performers={landingEvent?.performers ?? []} />
         <VenuesSection />
         <PricingSection
           dbCategories={

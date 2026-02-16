@@ -5,7 +5,7 @@ export type Event = {
   title: string;
   date: string;
   venue: string;
-  performers: string[];
+  performers: Performer[];
   price: string;
   map: {
     lat: number;
@@ -15,10 +15,10 @@ export type Event = {
 };
 
 export type Performer = {
-  id: number;
   name: string;
-  bio?: string;
-  image?: string;
+  image: string;
+  instagram: string;
+  youtube: string;
 };
 
 export type Venue = {
@@ -46,7 +46,7 @@ export type LandingEvent = {
   date: string;
   time_label: string;
   venue: string;
-  performers: string[];
+  performers: Performer[];
   categories: LandingTicketCategory[];
 };
 
@@ -55,6 +55,7 @@ export * from "./midtrans";
 
 // Re-export DB types
 export type {
+  PerformerData,
   DbEvent,
   DbTicketCategory,
   DbTicketStock,

@@ -5,6 +5,13 @@ export type TransactionStatus = "pending" | "paid" | "expired" | "failed" | "ref
 export type TicketStatus = "inactive" | "active" | "used" | "cancelled";
 export type UserRole = "ADMIN" | "USER";
 
+export type PerformerData = {
+  name: string;
+  image: string;
+  instagram: string;
+  youtube: string;
+};
+
 export type DbEvent = {
   id: number;
   title: string;
@@ -16,7 +23,7 @@ export type DbEvent = {
   venue_address: string | null;
   venue_lat: number | null;
   venue_lng: number | null;
-  performers: string[];
+  performers: PerformerData[];
   image_url: string | null;
   is_published: boolean;
   created_at: string;

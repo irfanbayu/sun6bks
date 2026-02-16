@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Plus,
   Pencil,
@@ -16,6 +17,8 @@ import {
   MapPin,
   Users,
   Ticket,
+  Upload,
+  ImageIcon,
 } from "lucide-react";
 import {
   createEvent,
@@ -23,7 +26,9 @@ import {
   deleteEvent,
   toggleEventPublished,
   type EventInput,
+  type PerformerInput,
 } from "@/actions/admin-events";
+import { uploadPerformerImage } from "@/actions/admin-storage";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -50,7 +55,7 @@ type EventData = {
   venue_address: string | null;
   venue_lat: number | null;
   venue_lng: number | null;
-  performers: string[];
+  performers: PerformerInput[];
   image_url: string | null;
   is_published: boolean;
   created_at: string;
@@ -62,6 +67,13 @@ type AdminEventsClientProps = {
 };
 
 // ─── Constants ────────────────────────────────────────────────
+
+const EMPTY_PERFORMER: PerformerInput = {
+  name: "",
+  image: "",
+  instagram: "",
+  youtube: "",
+};
 
 const EMPTY_CATEGORY: CategoryData = {
   name: "",
@@ -84,7 +96,7 @@ const EMPTY_FORM: EventInput = {
   venue_address: "",
   venue_lat: null,
   venue_lng: null,
-  performers: [""],
+  performers: [{ ...EMPTY_PERFORMER }],
   image_url: "",
   is_published: false,
   categories: [{ ...EMPTY_CATEGORY, sort_order: 0 }],
@@ -141,6 +153,7 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [message, setMessage] = useState<{
     text: string;
     success: boolean;
@@ -171,12 +184,23 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
       venue_lat: event.venue_lat,
       venue_lng: event.venue_lng,
       performers:
-        event.performers.length > 0 ? event.performers : [""],
+        event.performers.length > 0
+          ? event.performers.map((p) => ({
+              name: p.name ?? "",
+              image: p.image ?? "",
+              instagram: p.instagram ?? "",
+              youtube: p.youtube ?? "",
+            }))
+          : [{ ...EMPTY_PERFORMER }],
       image_url: event.image_url ?? "",
       is_published: event.is_published,
       categories:
         event.categories.length > 0
-          ? event.categories.map((c) => ({ ...c }))
+          ? event.categories.map((c) => ({
+              ...c,
+              description: c.description ?? "",
+              features: c.features ?? [],
+            }))
           : [{ ...EMPTY_CATEGORY, sort_order: 0 }],
     });
     setShowForm(true);
@@ -205,18 +229,22 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
 
   // ─── Performer Handlers ──────────────────────────────────
 
-  const handlePerformerChange = useCallback((index: number, value: string) => {
-    setForm((prev) => {
-      const performers = [...prev.performers];
-      performers[index] = value;
-      return { ...prev, performers };
-    });
-  }, []);
+  const handlePerformerChange = useCallback(
+    (index: number, field: keyof PerformerInput, value: string) => {
+      setForm((prev) => {
+        const performers = prev.performers.map((p, i) =>
+          i === index ? { ...p, [field]: value } : p
+        );
+        return { ...prev, performers };
+      });
+    },
+    []
+  );
 
   const handleAddPerformer = useCallback(() => {
     setForm((prev) => ({
       ...prev,
-      performers: [...prev.performers, ""],
+      performers: [...prev.performers, { ...EMPTY_PERFORMER }],
     }));
   }, []);
 
@@ -226,6 +254,32 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
       performers: prev.performers.filter((_, i) => i !== index),
     }));
   }, []);
+
+  const handleUploadPerformerImage = useCallback(
+    async (index: number, file: File) => {
+      setUploadingIndex(index);
+      setMessage(null);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadPerformerImage(formData);
+
+      if (result.success) {
+        setForm((prev) => {
+          const performers = prev.performers.map((p, i) =>
+            i === index ? { ...p, image: result.url } : p
+          );
+          return { ...prev, performers };
+        });
+      } else {
+        setMessage({ text: result.message, success: false });
+      }
+
+      setUploadingIndex(null);
+    },
+    []
+  );
 
   // ─── Category Handlers ───────────────────────────────────
 
@@ -412,9 +466,11 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
           form={form}
           editingEventId={editingEventId}
           loading={loading}
+          uploadingIndex={uploadingIndex}
           message={message}
           onFieldChange={handleFieldChange}
           onPerformerChange={handlePerformerChange}
+          onUploadPerformerImage={handleUploadPerformerImage}
           onAddPerformer={handleAddPerformer}
           onRemovePerformer={handleRemovePerformer}
           onCategoryChange={handleCategoryChange}
@@ -652,9 +708,11 @@ type EventFormProps = {
   form: EventInput;
   editingEventId: number | null;
   loading: string | null;
+  uploadingIndex: number | null;
   message: { text: string; success: boolean } | null;
   onFieldChange: (field: keyof EventInput, value: string | boolean | null) => void;
-  onPerformerChange: (index: number, value: string) => void;
+  onPerformerChange: (index: number, field: keyof PerformerInput, value: string) => void;
+  onUploadPerformerImage: (index: number, file: File) => void;
   onAddPerformer: () => void;
   onRemovePerformer: (index: number) => void;
   onCategoryChange: (
@@ -679,9 +737,11 @@ const EventForm = ({
   form,
   editingEventId,
   loading,
+  uploadingIndex,
   message,
   onFieldChange,
   onPerformerChange,
+  onUploadPerformerImage,
   onAddPerformer,
   onRemovePerformer,
   onCategoryChange,
@@ -693,6 +753,7 @@ const EventForm = ({
   onSubmit,
   onClose,
 }: EventFormProps) => {
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const isSubmitting = loading === "create" || loading === "update";
 
   return (
@@ -866,28 +927,147 @@ const EventForm = ({
             onClick={onAddPerformer}
             className="flex items-center gap-1 text-xs text-sun6bks-gold transition-colors hover:text-sun6bks-gold/80"
           >
-            <Plus className="h-3 w-3" /> Tambah
+            <Plus className="h-3 w-3" /> Tambah Performer
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {form.performers.map((performer, i) => (
-            <div key={i} className="flex gap-2">
-              <input
-                type="text"
-                value={performer}
-                onChange={(e) => onPerformerChange(i, e.target.value)}
-                placeholder={`Performer ${i + 1}`}
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-              />
-              {form.performers.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => onRemovePerformer(i)}
-                  className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+            <div
+              key={i}
+              className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-300">
+                  Performer #{i + 1}
+                </span>
+                {form.performers.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onRemovePerformer(i)}
+                    className="flex items-center gap-1 text-xs text-red-400 transition-colors hover:text-red-300"
+                  >
+                    <Trash2 className="h-3 w-3" /> Hapus
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Foto Upload + Preview */}
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Foto
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {/* Preview */}
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5">
+                      {performer.image ? (
+                        <Image
+                          src={performer.image}
+                          alt={performer.name || "Performer"}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-gray-600" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Upload Button */}
+                    <div className="flex flex-1 flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRefs.current[i]?.click()}
+                          disabled={uploadingIndex === i}
+                          className="flex items-center gap-1.5 rounded-lg bg-sun6bks-gold/10 px-3 py-1.5 text-xs font-medium text-sun6bks-gold transition-colors hover:bg-sun6bks-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {uploadingIndex === i ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          {uploadingIndex === i ? "Uploading..." : "Upload Foto"}
+                        </button>
+                        {performer.image && (
+                          <button
+                            type="button"
+                            onClick={() => onPerformerChange(i, "image", "")}
+                            className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                            title="Hapus foto"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        ref={(el) => { fileInputRefs.current[i] = el; }}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) onUploadPerformerImage(i, file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={performer.image}
+                        onChange={(e) =>
+                          onPerformerChange(i, "image", e.target.value)
+                        }
+                        placeholder="Atau paste URL: https://..."
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nama */}
+                <div>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Nama *
+                  </label>
+                  <input
+                    type="text"
+                    value={performer.name}
+                    onChange={(e) =>
+                      onPerformerChange(i, "name", e.target.value)
+                    }
+                    placeholder="Nama performer"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Instagram
+                  </label>
+                  <input
+                    type="text"
+                    value={performer.instagram}
+                    onChange={(e) =>
+                      onPerformerChange(i, "instagram", e.target.value)
+                    }
+                    placeholder="@username"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    YouTube
+                  </label>
+                  <input
+                    type="text"
+                    value={performer.youtube}
+                    onChange={(e) =>
+                      onPerformerChange(i, "youtube", e.target.value)
+                    }
+                    placeholder="@channel atau URL"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                  />
+                </div>
+              </div>
             </div>
           ))}
         </div>

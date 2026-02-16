@@ -3,76 +3,18 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Instagram, Youtube, Mic } from "lucide-react";
+import Image from "next/image";
 
 type Performer = {
-  id: number;
   name: string;
-  nickname: string;
-  bio: string;
   image: string;
   instagram: string;
-  youtube?: string;
-  showsCount: number;
+  youtube: string;
 };
 
-const PERFORMERS: Performer[] = [
-  {
-    id: 1,
-    name: "Dedi Supriyadi",
-    nickname: "Dedi",
-    bio: "Raja observasi kehidupan rumah tangga Bekasi",
-    image: "/performers/dedi.jpg",
-    instagram: "@dedi_bekasi",
-    youtube: "@DediKomedi",
-    showsCount: 45,
-  },
-  {
-    id: 2,
-    name: "Echa Novita",
-    nickname: "Echa",
-    bio: "Komedian wanita dengan joke-joke kelas pekerja",
-    image: "/performers/echa.jpg",
-    instagram: "@echa_sun6",
-    showsCount: 38,
-  },
-  {
-    id: 3,
-    name: "Fajar Ramadan",
-    nickname: "Fajar",
-    bio: "Storyteller absurd tentang transportasi umum",
-    image: "/performers/fajar.jpg",
-    instagram: "@fajar_comedy",
-    youtube: "@FajarStandup",
-    showsCount: 52,
-  },
-  {
-    id: 4,
-    name: "Rina Bekasi",
-    nickname: "Rina",
-    bio: "Ibu rumah tangga dengan humor gelap",
-    image: "/performers/rina.jpg",
-    instagram: "@rinabks_comedy",
-    showsCount: 30,
-  },
-  {
-    id: 5,
-    name: "Budi Santoso",
-    nickname: "Budi",
-    bio: "Office worker dengan joke corporate life",
-    image: "/performers/budi.jpg",
-    instagram: "@budi_standup",
-    showsCount: 25,
-  },
-  {
-    id: 6,
-    name: "Ahmad Rizky",
-    nickname: "Ahmad",
-    bio: "Newcomer dengan energi tinggi dan fresh material",
-    image: "/performers/ahmad.jpg",
-    instagram: "@ahmadrzky",
-    showsCount: 12,
-  },
-];
+type PerformersSectionProps = {
+  performers: Performer[];
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -97,9 +39,13 @@ const cardVariants = {
   },
 };
 
-export const PerformersSection = () => {
+export const PerformersSection = ({ performers }: PerformersSectionProps) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+
+  if (performers.length === 0) {
+    return null;
+  }
 
   return (
     <section
@@ -125,7 +71,7 @@ export const PerformersSection = () => {
           className="mb-16 text-center"
         >
           <span className="mb-4 inline-block rounded-full bg-sun6bks-gold/10 px-4 py-2 text-sm font-semibold uppercase tracking-wider text-sun6bks-gold">
-            🌟 Talent
+            Talent
           </span>
           <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
             Our{" "}
@@ -134,7 +80,8 @@ export const PerformersSection = () => {
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-400">
-            Komedian lokal Bekasi dengan gaya unik dan material segar yang siap bikin kamu ngakak!
+            Komedian dengan gaya unik dan material segar yang siap bikin kamu
+            ngakak!
           </p>
         </motion.div>
 
@@ -145,65 +92,65 @@ export const PerformersSection = () => {
           animate={isInView ? "visible" : "hidden"}
           className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {PERFORMERS.map((performer) => (
+          {performers.map((performer, index) => (
             <motion.div
-              key={performer.id}
+              key={`${performer.name}-${index}`}
               variants={cardVariants}
               whileHover={{ scale: 1.05, y: -10 }}
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-6 backdrop-blur-sm transition-all duration-500 hover:border-sun6bks-gold/30"
             >
-              {/* Avatar Placeholder */}
+              {/* Avatar */}
               <div className="relative mx-auto mb-6 h-32 w-32 overflow-hidden rounded-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-sun6bks-gold/30 to-sun6bks-orange/30" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Mic className="h-12 w-12 text-sun6bks-gold/50" />
-                </div>
+                {performer.image ? (
+                  <Image
+                    src={performer.image}
+                    alt={performer.name}
+                    fill
+                    className="object-cover"
+                    sizes="128px"
+                  />
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-sun6bks-gold/30 to-sun6bks-orange/30" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Mic className="h-12 w-12 text-sun6bks-gold/50" />
+                    </div>
+                  </>
+                )}
                 {/* Hover Glow Effect */}
                 <motion.div
-                  className="absolute -inset-2 rounded-full bg-sun6bks-gold/20 blur-xl opacity-0 transition-opacity group-hover:opacity-100"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                  }}
+                  className="absolute -inset-2 rounded-full bg-sun6bks-gold/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 />
               </div>
 
-              {/* Name & Bio */}
+              {/* Name */}
               <div className="text-center">
-                <h3 className="mb-1 text-xl font-bold text-white transition-colors group-hover:text-sun6bks-gold">
+                <h3 className="mb-3 text-xl font-bold text-white transition-colors group-hover:text-sun6bks-gold">
                   {performer.name}
                 </h3>
-                <p className="mb-3 text-sm text-sun6bks-gold">
-                  &ldquo;{performer.nickname}&rdquo;
-                </p>
-                <p className="mb-4 text-sm text-gray-400">
-                  {performer.bio}
-                </p>
-
-                {/* Stats */}
-                <div className="mb-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-                  <span className="rounded-full bg-white/5 px-3 py-1">
-                    {performer.showsCount} Shows
-                  </span>
-                </div>
 
                 {/* Social Links */}
                 <div className="flex items-center justify-center gap-3">
-                  <motion.a
-                    href={`https://instagram.com/${performer.instagram.replace("@", "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.2, rotate: 5 }}
-                    className="rounded-full bg-white/10 p-2 text-gray-400 transition-colors hover:bg-sun6bks-gold/20 hover:text-sun6bks-gold"
-                  >
-                    <Instagram className="h-4 w-4" />
-                  </motion.a>
+                  {performer.instagram && (
+                    <motion.a
+                      href={`https://instagram.com/${performer.instagram.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.2, rotate: 5 }}
+                      className="rounded-full bg-white/10 p-2 text-gray-400 transition-colors hover:bg-sun6bks-gold/20 hover:text-sun6bks-gold"
+                    >
+                      <Instagram className="h-4 w-4" />
+                    </motion.a>
+                  )}
                   {performer.youtube && (
                     <motion.a
-                      href={`https://youtube.com/${performer.youtube}`}
+                      href={
+                        performer.youtube.startsWith("http")
+                          ? performer.youtube
+                          : `https://youtube.com/${performer.youtube}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       whileHover={{ scale: 1.2, rotate: -5 }}
@@ -216,7 +163,7 @@ export const PerformersSection = () => {
               </div>
 
               {/* Decorative Corner */}
-              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-sun6bks-gold/10 blur-2xl transition-opacity group-hover:opacity-100 opacity-0" />
+              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-sun6bks-gold/10 opacity-0 blur-2xl transition-opacity group-hover:opacity-100" />
             </motion.div>
           ))}
         </motion.div>
@@ -228,9 +175,7 @@ export const PerformersSection = () => {
           transition={{ delay: 0.8 }}
           className="mt-12 text-center"
         >
-          <p className="mb-4 text-gray-400">
-            Mau tampil di SUN 6 BKS? 
-          </p>
+          <p className="mb-4 text-gray-400">Mau tampil di SUN 6 BKS?</p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

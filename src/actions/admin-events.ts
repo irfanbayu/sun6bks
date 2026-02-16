@@ -2,7 +2,7 @@
 
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import type { EventWithCategories } from "@/lib/supabase/types";
+import type { EventWithCategories, PerformerData } from "@/lib/supabase/types";
 
 type ActionResult = {
   success: boolean;
@@ -21,6 +21,8 @@ type CategoryInput = {
   remaining_stock: number;
 };
 
+export type PerformerInput = PerformerData;
+
 export type EventInput = {
   title: string;
   slug: string;
@@ -31,7 +33,7 @@ export type EventInput = {
   venue_address: string;
   venue_lat: number | null;
   venue_lng: number | null;
-  performers: string[];
+  performers: PerformerInput[];
   image_url: string;
   is_published: boolean;
   categories: CategoryInput[];
@@ -80,7 +82,7 @@ export const createEvent = async (input: EventInput): Promise<ActionResult> => {
   await requireAdmin();
 
   try {
-    const slug = input.slug.trim() || generateSlug(input.title);
+    const slug = (input.slug ?? "").trim() || generateSlug(input.title);
 
     // 1. Insert event
     const { data: event, error: eventError } = await supabaseAdmin
@@ -88,15 +90,15 @@ export const createEvent = async (input: EventInput): Promise<ActionResult> => {
       .insert({
         title: input.title.trim(),
         slug,
-        description: input.description.trim() || null,
+        description: (input.description ?? "").trim() || null,
         date: input.date,
-        time_label: input.time_label.trim(),
+        time_label: (input.time_label ?? "").trim(),
         venue: input.venue.trim(),
-        venue_address: input.venue_address.trim() || null,
+        venue_address: (input.venue_address ?? "").trim() || null,
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
-        performers: input.performers.filter((p) => p.trim()),
-        image_url: input.image_url.trim() || null,
+        performers: (input.performers ?? []).filter((p) => p.name.trim()),
+        image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,
       })
       .select("id")
@@ -116,8 +118,8 @@ export const createEvent = async (input: EventInput): Promise<ActionResult> => {
         event_id: event.id,
         name: c.name.trim(),
         price: c.price,
-        description: c.description.trim() || null,
-        features: c.features.filter((f) => f.trim()),
+        description: (c.description ?? "").trim() || null,
+        features: (c.features ?? []).filter((f) => f.trim()),
         sort_order: c.sort_order ?? i,
         is_active: c.is_active,
       }));
@@ -179,7 +181,7 @@ export const updateEvent = async (
   await requireAdmin();
 
   try {
-    const slug = input.slug.trim() || generateSlug(input.title);
+    const slug = (input.slug ?? "").trim() || generateSlug(input.title);
 
     // 1. Update event
     const { error: eventError } = await supabaseAdmin
@@ -187,15 +189,15 @@ export const updateEvent = async (
       .update({
         title: input.title.trim(),
         slug,
-        description: input.description.trim() || null,
+        description: (input.description ?? "").trim() || null,
         date: input.date,
-        time_label: input.time_label.trim(),
+        time_label: (input.time_label ?? "").trim(),
         venue: input.venue.trim(),
-        venue_address: input.venue_address.trim() || null,
+        venue_address: (input.venue_address ?? "").trim() || null,
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
-        performers: input.performers.filter((p) => p.trim()),
-        image_url: input.image_url.trim() || null,
+        performers: (input.performers ?? []).filter((p) => p.name.trim()),
+        image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,
       })
       .eq("id", eventId);
@@ -243,8 +245,8 @@ export const updateEvent = async (
           .update({
             name: cat.name.trim(),
             price: cat.price,
-            description: cat.description.trim() || null,
-            features: cat.features.filter((f) => f.trim()),
+            description: (cat.description ?? "").trim() || null,
+            features: (cat.features ?? []).filter((f) => f.trim()),
             sort_order: cat.sort_order ?? i,
             is_active: cat.is_active,
           })
@@ -274,8 +276,8 @@ export const updateEvent = async (
             event_id: eventId,
             name: cat.name.trim(),
             price: cat.price,
-            description: cat.description.trim() || null,
-            features: cat.features.filter((f) => f.trim()),
+            description: (cat.description ?? "").trim() || null,
+            features: (cat.features ?? []).filter((f) => f.trim()),
             sort_order: cat.sort_order ?? i,
             is_active: cat.is_active,
           })
