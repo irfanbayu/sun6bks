@@ -1,7 +1,14 @@
 "use server";
 
-import type { CreateTransactionParams, SnapTokenResponse } from "@/types/midtrans";
-import { getSnap, generateOrderId } from "@/lib/midtrans/server";
+import type {
+  CreateTransactionParams,
+  SnapTokenResponse,
+} from "@/types/midtrans";
+import {
+  createSnapTransaction,
+  generateOrderId,
+  formatJakartaTime,
+} from "@/lib/midtrans/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 /**
@@ -12,8 +19,6 @@ export const createOrderAndSnapToken = async (
   params: CreateTransactionParams
 ): Promise<SnapTokenResponse> => {
   try {
-    const snap = getSnap();
-
     // 1. Validate event + category + stock (parallel fetch)
     const [eventResult, categoryResult] = await Promise.all([
       supabaseAdmin
@@ -66,7 +71,7 @@ export const createOrderAndSnapToken = async (
     const orderId = generateOrderId(params.eventId);
     const grossAmount = params.quantity * categoryResult.data.price;
 
-    // 4. Create Midtrans transaction
+    // 4. Create Midtrans Snap transaction (native fetch, proper Base64 auth)
     const transactionParams = {
       transaction_details: {
         order_id: orderId,
@@ -77,7 +82,10 @@ export const createOrderAndSnapToken = async (
           id: `TICKET-${params.eventId}-${params.categoryId}`,
           price: categoryResult.data.price,
           quantity: params.quantity,
-          name: `${eventResult.data.title} - ${categoryResult.data.name}`.substring(0, 50),
+          name: `${eventResult.data.title} - ${categoryResult.data.name}`.substring(
+            0,
+            50
+          ),
           category: "Tiket Event",
         },
       ],
@@ -90,17 +98,13 @@ export const createOrderAndSnapToken = async (
         finish: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/payment/${orderId}`,
       },
       expiry: {
-        start_time: new Date()
-          .toISOString()
-          .replace("T", " ")
-          .substring(0, 19)
-          .concat(" +0700"),
+        start_time: formatJakartaTime(),
         unit: "hours",
         duration: 24,
       },
     };
 
-    const midtransResult = await snap.createTransaction(transactionParams);
+    const midtransResult = await createSnapTransaction(transactionParams);
 
     // 5. Insert transaction row (status=pending, no stock decrement yet)
     const { error: insertError } = await supabaseAdmin
@@ -134,30 +138,22 @@ export const createOrderAndSnapToken = async (
   } catch (error: unknown) {
     console.error("[createOrderAndSnapToken] Error:", error);
 
-    if (error && typeof error === "object") {
-      const errorObj = error as Record<string, unknown>;
+    // Handle Midtrans API errors (from our createSnapTransaction)
+    const errorObj = error as Record<string, unknown>;
+    const statusCode = errorObj?.statusCode;
 
-      if ("ApiResponse" in errorObj) {
-        const apiResponse = errorObj.ApiResponse as {
-          status_code?: string;
-          status_message?: string;
-          error_messages?: string[];
-        };
+    if (statusCode === 401) {
+      return {
+        success: false,
+        error: "Autentikasi Midtrans gagal. Hubungi admin.",
+      };
+    }
 
-        if (apiResponse?.status_code === "401") {
-          return {
-            success: false,
-            error: "Autentikasi Midtrans gagal. Hubungi admin.",
-          };
-        }
-
-        const errorMessages =
-          apiResponse?.error_messages ||
-          (apiResponse?.status_message ? [apiResponse.status_message] : []);
-
-        if (errorMessages.length > 0) {
-          return { success: false, error: errorMessages.join(", ") };
-        }
+    if (errorObj?.midtransResponse) {
+      const response = errorObj.midtransResponse as Record<string, unknown>;
+      const errorMessages = (response.error_messages as string[]) || [];
+      if (errorMessages.length > 0) {
+        return { success: false, error: errorMessages.join(", ") };
       }
     }
 

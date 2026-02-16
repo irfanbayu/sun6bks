@@ -102,7 +102,7 @@ export const BuyTicketModal = ({
         onClose();
       }
     },
-    [onClose, paymentStatus]
+    [onClose, paymentStatus],
   );
 
   useEffect(() => {
@@ -129,10 +129,7 @@ export const BuyTicketModal = ({
       if (isSignedIn && user) {
         setCustomerDetails((prev) => ({
           name: prev.name || user.fullName || user.firstName || "",
-          email:
-            prev.email ||
-            user.primaryEmailAddress?.emailAddress ||
-            "",
+          email: prev.email || user.primaryEmailAddress?.emailAddress || "",
           phone: prev.phone,
         }));
       }
@@ -248,7 +245,7 @@ export const BuyTicketModal = ({
         }
         setPaymentStatus("error");
         setPaymentMessage(
-          "Payment gateway belum siap. Refresh halaman dan coba lagi."
+          "Payment gateway belum siap. Refresh halaman dan coba lagi.",
         );
         return;
       }
@@ -272,7 +269,17 @@ export const BuyTicketModal = ({
     } catch (error) {
       console.error("Checkout error:", error);
       setPaymentStatus("error");
-      setPaymentMessage("Terjadi kesalahan. Silakan coba lagi.");
+
+      if (
+        error instanceof TypeError &&
+        error.message === "Failed to fetch"
+      ) {
+        setPaymentMessage(
+          "Tidak dapat terhubung ke server. Periksa koneksi internet dan coba lagi."
+        );
+      } else {
+        setPaymentMessage("Terjadi kesalahan. Silakan coba lagi.");
+      }
     }
   };
 
@@ -532,7 +539,11 @@ export const BuyTicketModal = ({
                       Anda perlu{" "}
                       <button
                         type="button"
-                        onClick={() => clerk.redirectToSignIn({ afterSignInUrl: window.location.href })}
+                        onClick={() =>
+                          clerk.redirectToSignIn({
+                            afterSignInUrl: window.location.href,
+                          })
+                        }
                         className="font-semibold text-sun6bks-gold underline underline-offset-2 hover:text-sun6bks-orange"
                       >
                         masuk

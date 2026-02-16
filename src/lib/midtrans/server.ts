@@ -16,26 +16,84 @@ if (!SERVER_KEY && process.env.NODE_ENV !== "test") {
   console.warn("[Midtrans] MIDTRANS_SERVER_KEY is not configured");
 }
 
-// ---------- Snap instance (lazy singleton) ----------
+const SNAP_BASE_URL = IS_PRODUCTION
+  ? "https://app.midtrans.com/snap/v1"
+  : "https://app.sandbox.midtrans.com/snap/v1";
 
-let _snap: InstanceType<typeof midtransClient.Snap> | null = null;
+// ---------- Snap Transaction (native fetch — no axios dependency) ----------
 
-export const getSnap = () => {
-  if (!_snap) {
-    if (!SERVER_KEY) {
-      throw new Error("MIDTRANS_SERVER_KEY is not configured");
-    }
-    _snap = new midtransClient.Snap({
-      isProduction: IS_PRODUCTION,
-      serverKey: SERVER_KEY,
-    });
-  }
-  return _snap;
+type SnapTransactionResult = {
+  token: string;
+  redirect_url: string;
 };
 
-// ---------- Core API instance (for status checks) ----------
+type MidtransApiError = Error & {
+  statusCode: number;
+  midtransResponse: Record<string, unknown>;
+};
 
-let _coreApi: InstanceType<typeof midtransClient.CoreApi> | null = null;
+/**
+ * Create a Snap transaction using native `fetch` with proper Basic Auth.
+ * More reliable in Next.js server actions than `midtrans-client` (axios-based).
+ */
+export const createSnapTransaction = async (
+  params: Record<string, unknown>
+): Promise<SnapTransactionResult> => {
+  if (!SERVER_KEY) {
+    throw new Error("MIDTRANS_SERVER_KEY is not configured");
+  }
+
+  const url = `${SNAP_BASE_URL}/transactions`;
+  const authString = Buffer.from(`${SERVER_KEY}:`).toString("base64");
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Midtrans] Creating Snap transaction:", {
+      url,
+      orderId: (params.transaction_details as Record<string, unknown>)
+        ?.order_id,
+      grossAmount: (params.transaction_details as Record<string, unknown>)
+        ?.gross_amount,
+      isProduction: IS_PRODUCTION,
+      serverKeyPrefix: `${SERVER_KEY.substring(0, 16)}...`,
+    });
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Basic ${authString}`,
+    },
+    body: JSON.stringify(params),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[Midtrans] Snap API error:", {
+        status: response.status,
+        data,
+      });
+    }
+
+    const errorMessages: string[] =
+      data.error_messages || [data.status_message || "Unknown Midtrans error"];
+
+    const error = new Error(errorMessages.join(", ")) as MidtransApiError;
+    error.statusCode = response.status;
+    error.midtransResponse = data;
+    throw error;
+  }
+
+  return data as SnapTransactionResult;
+};
+
+// ---------- Core API instance (for status checks via midtrans-client) ----------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _coreApi: any = null;
 
 export const getCoreApi = () => {
   if (!_coreApi) {
@@ -76,6 +134,30 @@ export const generateOrderId = (eventId: number): string => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `SUN6BKS-${eventId}-${timestamp}-${random}`;
+};
+
+// ---------- Jakarta time formatter (for Midtrans expiry) ----------
+
+/**
+ * Format a Date to Midtrans-compatible string in Asia/Jakarta timezone.
+ * Output: "2026-02-16 19:30:45 +0700"
+ */
+export const formatJakartaTime = (date: Date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")} +0700`;
 };
 
 // ---------- Status mapping ----------
