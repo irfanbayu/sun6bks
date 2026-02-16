@@ -55,6 +55,7 @@ type EventData = {
   venue_address: string | null;
   venue_lat: number | null;
   venue_lng: number | null;
+  venue_maps_url: string | null;
   performers: PerformerInput[];
   image_url: string | null;
   is_published: boolean;
@@ -96,6 +97,7 @@ const EMPTY_FORM: EventInput = {
   venue_address: "",
   venue_lat: null,
   venue_lng: null,
+  venue_maps_url: "",
   performers: [{ ...EMPTY_PERFORMER }],
   image_url: "",
   is_published: false,
@@ -183,6 +185,7 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
       venue_address: event.venue_address ?? "",
       venue_lat: event.venue_lat,
       venue_lng: event.venue_lng,
+      venue_maps_url: event.venue_maps_url ?? "",
       performers:
         event.performers.length > 0
           ? event.performers.map((p) => ({
@@ -871,6 +874,23 @@ const EventForm = ({
               placeholder="Alamat lengkap"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
             />
+          </div>
+
+          {/* Venue Google Maps URL */}
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs text-gray-400">
+              Link Google Maps
+            </label>
+            <input
+              type="url"
+              value={form.venue_maps_url}
+              onChange={(e) => onFieldChange("venue_maps_url", e.target.value)}
+              placeholder="https://maps.google.com/... atau https://goo.gl/maps/..."
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+            />
+            <p className="mt-1 text-xs text-gray-600">
+              Jika diisi, link ini akan digunakan pada tombol &quot;Buka di Google Maps&quot; di halaman landing.
+            </p>
           </div>
 
           {/* Description */}

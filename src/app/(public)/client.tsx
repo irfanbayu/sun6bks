@@ -115,7 +115,15 @@ const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
           onBuyCategory={handleOpenCheckout}
         />
         <PerformersSection performers={landingEvent?.performers ?? []} />
-        <VenuesSection />
+        {landingEvent ? (
+          <VenuesSection
+            venueName={landingEvent.venue}
+            venueAddress={landingEvent.venue_address}
+            venueLat={landingEvent.venue_lat}
+            venueLng={landingEvent.venue_lng}
+            venueMapsUrl={landingEvent.venue_maps_url}
+          />
+        ) : null}
         <PricingSection
           dbCategories={
             landingEvent?.categories.map((c) => ({

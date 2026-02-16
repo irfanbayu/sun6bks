@@ -46,6 +46,10 @@ export type LandingEvent = {
   date: string;
   time_label: string;
   venue: string;
+  venue_address: string | null;
+  venue_lat: number | null;
+  venue_lng: number | null;
+  venue_maps_url: string | null;
   performers: Performer[];
   categories: LandingTicketCategory[];
 };

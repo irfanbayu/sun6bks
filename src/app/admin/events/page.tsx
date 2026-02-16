@@ -18,6 +18,7 @@ export default async function AdminEventsPage() {
     venue_address: e.venue_address,
     venue_lat: e.venue_lat,
     venue_lng: e.venue_lng,
+    venue_maps_url: e.venue_maps_url,
     performers: (e.performers ?? []).map((p) => ({
       name: p.name ?? "",
       image: p.image ?? "",

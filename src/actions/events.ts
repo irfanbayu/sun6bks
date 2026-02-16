@@ -12,6 +12,10 @@ const mapToLandingEvent = (ev: EventWithCategories): LandingEvent => {
     date: ev.date,
     time_label: ev.time_label,
     venue: ev.venue,
+    venue_address: ev.venue_address ?? null,
+    venue_lat: ev.venue_lat ?? null,
+    venue_lng: ev.venue_lng ?? null,
+    venue_maps_url: ev.venue_maps_url ?? null,
     performers: (ev.performers ?? []).map((p) => ({
       name: p.name ?? "",
       image: p.image ?? "",
