@@ -358,8 +358,8 @@ const PaymentConfirmationPage = () => {
             </div>
 
             <p className="mt-4 text-center text-xs text-gray-500">
-              Tunjukkan kode tiket ini saat masuk venue. Tiket juga dikirim ke{" "}
-              {transaction.customerEmail}.
+              Tunjukkan kode tiket ini saat masuk venue. Invoice telah dikirim
+              ke {transaction.customerEmail}.
             </p>
           </motion.div>
         )}

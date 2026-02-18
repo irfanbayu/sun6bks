@@ -66,3 +66,47 @@ logs
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# OS generated files
+*.stackdump
+
+# Executables & Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package managers
+yarn.lock
+pnpm-lock.yaml
+
+# Sentry
+.sentryclirc
+
+# Storybook
+storybook-static/
+
+# PWA
+/public/sw.js
+/public/workbox-*.js
+/public/swe-worker-*.js
+
+# Prisma (if used)
+prisma/*.db
+prisma/*.db-journal
+
+# ESLint & Prettier cache
+.eslintcache
+.prettiercache
+
+# Docker
+docker-compose.override.yml
+
+# ngrok
+ngrok
+ngrok.exe
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

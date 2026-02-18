@@ -9,7 +9,11 @@ import {
   isValidTransition,
 } from "@/lib/midtrans/server";
 import { generateTicketCode } from "@/lib/tickets";
-import type { DbUserProfile, DbTransaction, DbTicket } from "@/lib/supabase/types";
+import type {
+  DbUserProfile,
+  DbTransaction,
+  DbTicket,
+} from "@/lib/supabase/types";
 
 // ────────────────────────────────────────────────────────────
 // ensureUserProfile
@@ -107,7 +111,7 @@ export const getUserOrders = async (): Promise<UserOrderItem[]> => {
       `*,
       events:event_id ( title, date, venue ),
       ticket_categories:category_id ( name ),
-      tickets ( id, ticket_code, status )`
+      tickets ( id, ticket_code, status )`,
     )
     .eq("clerk_user_id", userId)
     .order("created_at", { ascending: false });
@@ -133,7 +137,7 @@ export const getUserLastOrder = async (): Promise<UserOrderItem | null> => {
       `*,
       events:event_id ( title, date, venue ),
       ticket_categories:category_id ( name ),
-      tickets ( id, ticket_code, status )`
+      tickets ( id, ticket_code, status )`,
     )
     .eq("clerk_user_id", userId)
     .order("created_at", { ascending: false })
@@ -165,7 +169,7 @@ export type OrderDetailForInvoice = DbTransaction & {
 };
 
 export const getOrderDetail = async (
-  orderId: string
+  orderId: string,
 ): Promise<OrderDetailForInvoice | null> => {
   const userId = await requireAuth();
 
@@ -175,7 +179,7 @@ export const getOrderDetail = async (
       `*,
       events:event_id ( title, date, time_label, venue, venue_address ),
       ticket_categories:category_id ( name, price ),
-      tickets ( id, ticket_code, status, created_at )`
+      tickets ( id, ticket_code, status, created_at )`,
     )
     .eq("midtrans_order_id", orderId)
     .eq("clerk_user_id", userId)
@@ -200,7 +204,7 @@ type RecheckResult = {
 };
 
 export const recheckMyOrder = async (
-  orderId: string
+  orderId: string,
 ): Promise<RecheckResult> => {
   const userId = await requireAuth();
 
@@ -229,7 +233,7 @@ export const recheckMyOrder = async (
 
     const nextStatus = mapMidtransStatus(
       midtransStatus.transaction_status,
-      midtransStatus.fraud_status
+      midtransStatus.fraud_status,
     );
 
     if (nextStatus === "pending") {

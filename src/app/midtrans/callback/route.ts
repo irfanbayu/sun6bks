@@ -6,6 +6,7 @@ import {
   isValidTransition,
 } from "@/lib/midtrans/server";
 import { generateTicketCode } from "@/lib/tickets";
+import { sendInvoiceEmail } from "@/lib/email";
 
 // Midtrans webhook notification payload type
 type MidtransNotification = {
@@ -178,6 +179,9 @@ export const POST = async (request: Request) => {
           ticketError
         );
       }
+
+      // Fire-and-forget: send invoice email with PDF attachment
+      sendInvoiceEmail({ orderId: order_id, transactionId: transaction.id });
     }
 
     // 8. Mark webhook payload as processed

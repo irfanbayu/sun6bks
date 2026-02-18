@@ -27,12 +27,12 @@ const syncPendingStatus = async (transaction: {
   try {
     const coreApi = getCoreApi();
     const midtransStatus = await coreApi.transaction.status(
-      transaction.midtrans_order_id
+      transaction.midtrans_order_id,
     );
 
     const nextStatus = mapMidtransStatus(
       midtransStatus.transaction_status,
-      midtransStatus.fraud_status
+      midtransStatus.fraud_status,
     );
 
     if (
@@ -86,16 +86,13 @@ const syncPendingStatus = async (transaction: {
  * Polling endpoint for payment confirmation page.
  * Auto-syncs pending transactions with Midtrans API.
  */
-export const GET = async (
-  _request: Request,
-  { params }: RouteContext
-) => {
+export const GET = async (_request: Request, { params }: RouteContext) => {
   const { orderId } = params;
 
   if (!orderId) {
     return NextResponse.json(
       { error: "Order ID is required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -115,7 +112,7 @@ export const GET = async (
       created_at,
       event_id,
       category_id
-    `
+    `,
     )
     .eq("midtrans_order_id", orderId)
     .single();
@@ -123,7 +120,7 @@ export const GET = async (
   if (error || !transaction) {
     return NextResponse.json(
       { error: "Transaction not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -165,7 +162,10 @@ export const GET = async (
     quantity: transaction.quantity,
     customerName: transaction.customer_name,
     customerEmail: transaction.customer_email,
-    paidAt: currentStatus === "paid" ? (transaction.paid_at ?? new Date().toISOString()) : transaction.paid_at,
+    paidAt:
+      currentStatus === "paid"
+        ? (transaction.paid_at ?? new Date().toISOString())
+        : transaction.paid_at,
     expiredAt: transaction.expired_at,
     createdAt: transaction.created_at,
     event: eventResult.data
