@@ -1,4 +1,4 @@
-// SUN 6 BKS Type Definitions
+// Standupindo Bekasi Events Type Definitions
 
 export type Event = {
   id: number;

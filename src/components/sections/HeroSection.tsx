@@ -17,7 +17,9 @@ const formatDateBadge = (isoDate: string, timeLabel: string): string => {
   try {
     const d = new Date(isoDate);
     const day = d.getDate();
-    const month = d.toLocaleDateString("id-ID", { month: "long" }).toUpperCase();
+    const month = d
+      .toLocaleDateString("id-ID", { month: "long" })
+      .toUpperCase();
     const year = d.getFullYear();
     return `🎤 ${day} ${month} ${year} • ${timeLabel}`;
   } catch {
@@ -27,8 +29,8 @@ const formatDateBadge = (isoDate: string, timeLabel: string): string => {
 
 /** Deterministic positions for particles (index-based, no Math.random) */
 const PARTICLE_POSITIONS = [...Array(20)].map((_, i) => ({
-  left: ((i * 7 + 13) % 100),
-  top: ((i * 11 + 17) % 100),
+  left: (i * 7 + 13) % 100,
+  top: (i * 11 + 17) % 100,
   duration: 3 + (i % 3),
   delay: (i % 5) * 0.4,
 }));
@@ -72,7 +74,7 @@ export const HeroSection = ({
 
   const dateBadge = landingEvent
     ? formatDateBadge(landingEvent.date, landingEvent.time_label)
-    : "🎤 20 JANUARI 2026 • 20:00 WIB";
+    : "";
 
   const cheapestPrice = landingEvent?.categories.length
     ? Math.min(...landingEvent.categories.map((c) => c.price))
@@ -85,10 +87,7 @@ export const HeroSection = ({
       id="hero"
       className="relative min-h-screen overflow-hidden bg-sun6bks-dark"
     >
-      <motion.div
-        style={{ y: backgroundY }}
-        className="absolute inset-0 z-0"
-      >
+      <motion.div style={{ y: backgroundY }} className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-sun6bks-dark via-sun6bks-dark/90 to-sun6bks-dark" />
         <div
           className="absolute inset-0 opacity-20"
@@ -146,7 +145,7 @@ export const HeroSection = ({
         >
           <Sparkles className="h-6 w-6 text-sun6bks-gold" />
           <span className="text-sm font-semibold uppercase tracking-[0.3em] text-sun6bks-gold md:text-base">
-            Bekasi Comedy Community
+            Show Events
           </span>
           <Sparkles className="h-6 w-6 text-sun6bks-gold" />
         </motion.div>
@@ -158,11 +157,11 @@ export const HeroSection = ({
           className="mb-6 font-bold"
         >
           <span className="block text-5xl text-white md:text-7xl lg:text-8xl">
-            SUN 6 BKS
-          </span>
-          <span className="mt-2 block bg-gradient-to-r from-sun6bks-gold via-sun6bks-orange to-sun6bks-gold bg-clip-text text-2xl text-transparent md:text-4xl lg:text-5xl">
             STANDUPINDO BEKASI
           </span>
+          {/* <span className="mt-2 block bg-gradient-to-r from-sun6bks-gold via-sun6bks-orange to-sun6bks-gold bg-clip-text text-2xl text-transparent md:text-4xl lg:text-5xl">
+            EVENTS
+          </span> */}
         </motion.h1>
 
         <motion.div
@@ -182,9 +181,10 @@ export const HeroSection = ({
           transition={{ duration: 0.8, delay: 0.9 }}
           className="mb-12 max-w-lg text-lg text-gray-300 md:text-xl"
         >
-          Malam komedi terbaik di Bekasi!
+          Temukan jadwal standup comedy show, dan live comedy event dari
+          Standupindo Bekasi.
           <br className="hidden md:block" />
-          Ketawa bareng komedian lokal berbakat.
+          Info tiket, line-up comic, dan lokasi venue terupdate.
         </motion.p>
 
         <motion.button

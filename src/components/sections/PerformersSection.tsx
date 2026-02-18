@@ -167,24 +167,6 @@ export const PerformersSection = ({ performers }: PerformersSectionProps) => {
             </motion.div>
           ))}
         </motion.div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.8 }}
-          className="mt-12 text-center"
-        >
-          <p className="mb-4 text-gray-400">Mau tampil di SUN 6 BKS?</p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-2 rounded-full border border-sun6bks-gold/50 bg-transparent px-6 py-3 font-semibold text-sun6bks-gold transition-all hover:bg-sun6bks-gold/10"
-          >
-            <Mic className="h-4 w-4" />
-            Daftar Open Mic
-          </motion.button>
-        </motion.div>
       </div>
     </section>
   );

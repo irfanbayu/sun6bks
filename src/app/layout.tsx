@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SUN 6 BKS | Standupindo Bekasi",
+  title: "Standupindo Bekasi Events",
   description:
     "Komunitas Stand-up Comedy Bekasi - Event, Tiket, dan Komunitas Komedi Terbesar di Bekasi",
 };

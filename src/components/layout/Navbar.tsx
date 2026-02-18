@@ -78,10 +78,7 @@ export const Navbar = ({ onBuyTicket, isAdmin }: NavbarProps) => {
                 <Mic2 className="h-5 w-5 text-sun6bks-dark" />
               </div>
               <div>
-                <span className="text-lg font-bold text-white">SUN 6 BKS</span>
-                <span className="ml-2 hidden text-xs text-sun6bks-gold sm:inline">
-                  Bekasi
-                </span>
+                <span className="text-lg font-bold text-white">Standupindo Bekasi Events</span>
               </div>
             </motion.a>
 

@@ -1,4 +1,4 @@
-# SUN 6 BKS — Standupindo Bekasi
+# Standupindo Bekasi Events
 
 Platform tiket event untuk komunitas Stand-up Comedy Bekasi. Dibangun dengan **Next.js 14**, **Supabase**, **Midtrans**, dan **Clerk**.
 

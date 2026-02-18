@@ -133,7 +133,7 @@ export const verifySignature = (
 export const generateOrderId = (eventId: number): string => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `SUN6BKS-${eventId}-${timestamp}-${random}`;
+  return `SUBE-${eventId}-${timestamp}-${random}`;
 };
 
 // ---------- Jakarta time formatter (for Midtrans expiry) ----------

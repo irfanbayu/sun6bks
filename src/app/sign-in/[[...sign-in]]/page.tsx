@@ -6,7 +6,7 @@ export default function SignInPage() {
       <div className="w-full max-w-md px-4">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-white">
-            SUN 6 BKS
+            Standupindo Bekasi Events
           </h1>
           <p className="mt-2 text-sm text-gray-400">
             Masuk ke akun Anda

@@ -802,7 +802,7 @@ const EventForm = ({
               type="text"
               value={form.title}
               onChange={(e) => onFieldChange("title", e.target.value)}
-              placeholder="SUN 6 BKS Vol. 7 — Malam Komedi Bekasi"
+              placeholder="Standupindo Bekasi Events Vol. 7 — Malam Komedi Bekasi"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
             />
           </div>
@@ -816,7 +816,7 @@ const EventForm = ({
               type="text"
               value={form.slug}
               onChange={(e) => onFieldChange("slug", e.target.value)}
-              placeholder="sun6bks-7-malam-komedi-bekasi"
+              placeholder="standupindo-bekasi-events-7-malam-komedi-bekasi"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
             />
           </div>

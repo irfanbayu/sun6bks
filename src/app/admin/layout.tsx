@@ -29,7 +29,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-white">
-              SUN 6 BKS <span className="text-sun6bks-gold">Admin</span>
+              Standupindo Bekasi Events <span className="text-sun6bks-gold">Admin</span>
             </h1>
           </div>
           <nav className="flex items-center gap-6">

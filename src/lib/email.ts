@@ -5,7 +5,7 @@ import { generateInvoicePdf, type InvoiceData } from "@/lib/invoice-pdf";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? "SUN6BKS <onboarding@resend.dev>";
+  process.env.RESEND_FROM_EMAIL ?? "Standupindo Bekasi Events <onboarding@resend.dev>";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -54,8 +54,7 @@ const buildInvoiceHtml = (data: InvoiceData): string => {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%);padding:32px 40px;text-align:center;">
-              <h1 style="margin:0;color:#D4A843;font-size:24px;font-weight:bold;">SUN 6 BKS</h1>
-              <p style="margin:8px 0 0;color:#999;font-size:13px;">Standupindo Bekasi</p>
+              <h1 style="margin:0;color:#D4A843;font-size:24px;font-weight:bold;">Standupindo Bekasi Events</h1>
             </td>
           </tr>
 
@@ -156,11 +155,11 @@ const buildInvoiceHtml = (data: InvoiceData): string => {
           <tr>
             <td style="padding:32px 40px;text-align:center;">
               <p style="margin:0;color:#999;font-size:12px;line-height:1.6;">
-                Terima kasih telah membeli tiket di SUN 6 BKS!<br>
+                Terima kasih telah membeli tiket di Standupindo Bekasi Events!<br>
                 Jika ada pertanyaan, hubungi kami melalui media sosial kami.
               </p>
               <p style="margin:16px 0 0;color:#ccc;font-size:11px;">
-                &copy; ${new Date().getFullYear()} SUN 6 BKS &mdash; Standupindo Bekasi
+                &copy; ${new Date().getFullYear()} Standupindo Bekasi Events
               </p>
             </td>
           </tr>
@@ -236,7 +235,7 @@ export const sendInvoiceEmail = async ({
     const { error: emailError } = await resend.emails.send({
       from: FROM_EMAIL,
       to: order.customer_email,
-      subject: `Invoice Tiket — ${order.events?.title ?? "SUN 6 BKS"} (#${orderId})`,
+      subject: `Invoice Tiket — ${order.events?.title ?? "Standupindo Bekasi Events"} (#${orderId})`,
       html: buildInvoiceHtml(invoiceData),
       attachments: [
         {

@@ -84,8 +84,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
             </p>
           </div>
           <div className="text-right">
-            <h2 className="text-lg font-bold text-sun6bks-gold">SUN 6 BKS</h2>
-            <p className="text-sm text-gray-400">Standupindo Bekasi</p>
+            <h2 className="text-lg font-bold text-sun6bks-gold">Standupindo Bekasi Events</h2>
           </div>
         </div>
 
@@ -216,7 +215,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
 
         {/* Footer */}
         <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-gray-500">
-          <p>Terima kasih telah membeli tiket di SUN 6 BKS!</p>
+          <p>Terima kasih telah membeli tiket di Standupindo Bekasi Events!</p>
           <p className="mt-1">
             Dokumen ini merupakan bukti pembayaran yang sah.
           </p>

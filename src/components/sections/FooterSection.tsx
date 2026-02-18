@@ -120,8 +120,7 @@ export const FooterSection = () => {
                 <Mic2 className="h-6 w-6 text-sun6bks-dark" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">SUN 6 BKS</h3>
-                <p className="text-xs text-gray-500">Standupindo Bekasi</p>
+                <h3 className="text-xl font-bold text-white">Standupindo Bekasi Events</h3>
               </div>
             </div>
             <p className="mb-6 text-sm text-gray-400">
@@ -230,7 +229,7 @@ export const FooterSection = () => {
           className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-gray-500 md:flex-row"
         >
           <p>
-            © {currentYear} SUN 6 BKS | Standupindo Bekasi. All rights reserved.
+            © {currentYear} Standupindo Bekasi Events. All rights reserved.
           </p>
           <p className="flex items-center gap-1">
             Made with <Heart className="h-4 w-4 text-red-500" /> di Bekasi

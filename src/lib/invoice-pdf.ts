@@ -69,14 +69,16 @@ export const generateInvoicePdf = (data: InvoiceData): Buffer => {
 
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("SUN 6 BKS", pageWidth - margin, y, { align: "right" });
+  doc.text("Standupindo Bekasi", pageWidth - margin, y, { align: "right" });
 
   y += 6;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(120, 120, 120);
   doc.text(`#${data.orderId}`, margin, y);
-  doc.text("Standupindo Bekasi", pageWidth - margin, y, { align: "right" });
+  doc.text("Standupindo Bekasi Events", pageWidth - margin, y, {
+    align: "right",
+  });
   doc.setTextColor(0, 0, 0);
 
   // --- Divider ---
@@ -100,7 +102,7 @@ export const generateInvoicePdf = (data: InvoiceData): Buffer => {
   doc.text(
     data.paidAt ? formatDateTime(data.paidAt) : "-",
     pageWidth / 2 + 10,
-    y
+    y,
   );
 
   y += 6;
@@ -247,17 +249,17 @@ export const generateInvoicePdf = (data: InvoiceData): Buffer => {
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.text(
-    "Terima kasih telah membeli tiket di SUN 6 BKS!",
+    "Terima kasih telah membeli tiket di Standupindo Bekasi Events!",
     pageWidth / 2,
     y,
-    { align: "center" }
+    { align: "center" },
   );
   y += 4;
   doc.text(
     "Dokumen ini merupakan bukti pembayaran yang sah.",
     pageWidth / 2,
     y,
-    { align: "center" }
+    { align: "center" },
   );
 
   return Buffer.from(doc.output("arraybuffer"));

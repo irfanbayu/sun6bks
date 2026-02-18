@@ -1,4 +1,4 @@
-// Database types for SUN 6 BKS
+// Database types for Standupindo Bekasi Events
 // These mirror the Supabase schema defined in supabase/migrations/
 
 export type TransactionStatus = "pending" | "paid" | "expired" | "failed" | "refunded";
