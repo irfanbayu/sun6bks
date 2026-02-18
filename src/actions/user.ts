@@ -3,6 +3,12 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
+import {
+  getCoreApi,
+  mapMidtransStatus,
+  isValidTransition,
+} from "@/lib/midtrans/server";
+import { generateTicketCode } from "@/lib/tickets";
 import type { DbUserProfile, DbTransaction, DbTicket } from "@/lib/supabase/types";
 
 // ────────────────────────────────────────────────────────────
@@ -181,4 +187,115 @@ export const getOrderDetail = async (
   }
 
   return (data as OrderDetailForInvoice) ?? null;
+};
+
+// ────────────────────────────────────────────────────────────
+// recheckMyOrder — manual status check by user
+// ────────────────────────────────────────────────────────────
+
+type RecheckResult = {
+  success: boolean;
+  message: string;
+  newStatus?: string;
+};
+
+export const recheckMyOrder = async (
+  orderId: string
+): Promise<RecheckResult> => {
+  const userId = await requireAuth();
+
+  try {
+    const { data: transaction, error } = await supabaseAdmin
+      .from("transactions")
+      .select("id, status, quantity, category_id, midtrans_order_id")
+      .eq("midtrans_order_id", orderId)
+      .eq("clerk_user_id", userId)
+      .single();
+
+    if (error || !transaction) {
+      return { success: false, message: "Transaksi tidak ditemukan." };
+    }
+
+    if (transaction.status !== "pending") {
+      return {
+        success: true,
+        message: `Status saat ini: ${transaction.status}`,
+        newStatus: transaction.status,
+      };
+    }
+
+    const coreApi = getCoreApi();
+    const midtransStatus = await coreApi.transaction.status(orderId);
+
+    const nextStatus = mapMidtransStatus(
+      midtransStatus.transaction_status,
+      midtransStatus.fraud_status
+    );
+
+    if (nextStatus === "pending") {
+      return {
+        success: true,
+        message: "Pembayaran belum diterima. Silakan selesaikan pembayaran.",
+        newStatus: "pending",
+      };
+    }
+
+    if (!isValidTransition(transaction.status, nextStatus)) {
+      return {
+        success: false,
+        message: "Tidak dapat memperbarui status.",
+      };
+    }
+
+    const updateData: Record<string, unknown> = { status: nextStatus };
+    if (nextStatus === "paid") updateData.paid_at = new Date().toISOString();
+    if (nextStatus === "expired")
+      updateData.expired_at = new Date().toISOString();
+
+    const { error: updateError } = await supabaseAdmin
+      .from("transactions")
+      .update(updateData)
+      .eq("id", transaction.id)
+      .eq("status", "pending");
+
+    if (updateError) {
+      console.error("[recheckMyOrder] Update error:", updateError);
+      return { success: false, message: "Gagal memperbarui status." };
+    }
+
+    if (nextStatus === "paid") {
+      await supabaseAdmin.rpc("decrement_stock", {
+        p_category_id: transaction.category_id,
+        p_quantity: transaction.quantity,
+      });
+
+      const ticketRows = Array.from({ length: transaction.quantity }, () => ({
+        transaction_id: transaction.id,
+        ticket_code: generateTicketCode(),
+        status: "active" as const,
+        activated_at: new Date().toISOString(),
+      }));
+
+      await supabaseAdmin.from("tickets").insert(ticketRows);
+    }
+
+    const statusLabels: Record<string, string> = {
+      paid: "Pembayaran berhasil! Tiket sudah aktif.",
+      expired: "Pembayaran kedaluwarsa.",
+      failed: "Pembayaran gagal.",
+      refunded: "Pembayaran telah di-refund.",
+    };
+
+    return {
+      success: true,
+      message: statusLabels[nextStatus] ?? `Status: ${nextStatus}`,
+      newStatus: nextStatus,
+    };
+  } catch (error) {
+    console.error("[recheckMyOrder] Error:", error);
+    return {
+      success: false,
+      message: "Gagal mengecek status. Coba lagi nanti.",
+    };
+  }
 };

@@ -1,6 +1,7 @@
 import { getUserOrders } from "@/actions/user";
 import Link from "next/link";
 import { FileText, ExternalLink } from "lucide-react";
+import { RecheckButton } from "./client";
 
 export const dynamic = "force-dynamic";
 
@@ -119,16 +120,21 @@ export default async function UserOrdersPage() {
                       Invoice
                     </Link>
                   )}
-                  {order.status === "pending" && order.snap_redirect_url && (
-                    <a
-                      href={order.snap_redirect_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Bayar
-                    </a>
+                  {order.status === "pending" && (
+                    <>
+                      {order.snap_redirect_url && (
+                        <a
+                          href={order.snap_redirect_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Bayar
+                        </a>
+                      )}
+                      <RecheckButton orderId={order.midtrans_order_id} />
+                    </>
                   )}
                 </div>
               </div>
