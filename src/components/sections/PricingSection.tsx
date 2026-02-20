@@ -124,7 +124,7 @@ const formatPrice = (price: number): string => {
 };
 
 const mapDbCategoriesToTiers = (
-  categories: PricingCategoryInput[]
+  categories: PricingCategoryInput[],
 ): PricingTier[] => {
   return categories
     .filter((c) => c.is_active)
@@ -209,8 +209,8 @@ export const PricingSection = ({
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-400">
-            Harga terjangkau untuk pengalaman komedi premium. Pilih paket yang
-            sesuai kebutuhanmu!
+            Harga terjangkau untuk pengalaman event Standupindo Bekasi. Pilih
+            paket yang sesuai kebutuhanmu!
           </p>
         </motion.div>
 
@@ -349,11 +349,7 @@ export const PricingSection = ({
           </div>
           <div className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            Refund Policy
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-green-500" />
-            Midtrans Payment
+            Pembayaran Online
           </div>
         </motion.div>
       </div>

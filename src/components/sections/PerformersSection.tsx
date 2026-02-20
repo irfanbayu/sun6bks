@@ -80,8 +80,7 @@ export const PerformersSection = ({ performers }: PerformersSectionProps) => {
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-400">
-            Komedian dengan gaya unik dan material segar yang siap bikin kamu
-            ngakak!
+            Comic yang siap bikin kamu ngakak kocak!
           </p>
         </motion.div>
 
