@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 
 export type InvoiceData = {
   orderId: string;
@@ -54,7 +55,7 @@ const formatDateTime = (iso: string) => {
   }
 };
 
-export const generateInvoicePdf = (data: InvoiceData): Buffer => {
+export const generateInvoicePdf = async (data: InvoiceData): Promise<Buffer> => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -216,7 +217,7 @@ export const generateInvoicePdf = (data: InvoiceData): Buffer => {
   });
   doc.setFont("helvetica", "normal");
 
-  // --- Ticket Codes ---
+  // --- Ticket Codes with QR ---
   if (data.tickets.length > 0) {
     y += 14;
     doc.setDrawColor(220, 220, 220);
@@ -228,13 +229,38 @@ export const generateInvoicePdf = (data: InvoiceData): Buffer => {
     doc.text("KODE TIKET", margin, y);
     doc.setTextColor(0, 0, 0);
 
-    y += 6;
-    doc.setFontSize(10);
-    doc.setFont("courier", "bold");
+    y += 4;
+
+    const qrSize = 22;
+    const rowHeight = qrSize + 6;
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     for (const ticket of data.tickets) {
-      doc.text(`${ticket.ticket_code}  (${ticket.status})`, margin + 4, y);
-      y += 6;
+      if (y + rowHeight > pageHeight - 30) {
+        doc.addPage();
+        y = margin;
+      }
+
+      const qrDataUrl = await QRCode.toDataURL(ticket.ticket_code, {
+        width: 200,
+        margin: 1,
+        errorCorrectionLevel: "M",
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+
+      doc.addImage(qrDataUrl, "PNG", margin + 4, y, qrSize, qrSize);
+
+      doc.setFontSize(10);
+      doc.setFont("courier", "bold");
+      doc.text(ticket.ticket_code, margin + qrSize + 8, y + qrSize / 2 - 1);
+
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(ticket.status, margin + qrSize + 8, y + qrSize / 2 + 4);
+      doc.setTextColor(0, 0, 0);
+
+      y += rowHeight;
     }
 
     doc.setFont("helvetica", "normal");

@@ -230,7 +230,7 @@ export const sendInvoiceEmail = async ({
       tickets: order.tickets ?? [],
     };
 
-    const pdfBuffer = generateInvoicePdf(invoiceData);
+    const pdfBuffer = await generateInvoicePdf(invoiceData);
 
     const { error: emailError } = await resend.emails.send({
       from: FROM_EMAIL,

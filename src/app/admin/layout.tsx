@@ -52,6 +52,12 @@ export default async function AdminLayout({
               Transaksi
             </Link>
             <Link
+              href="/admin/tickets"
+              className="text-sm text-gray-400 transition-colors hover:text-white"
+            >
+              Tiket
+            </Link>
+            <Link
               href="/admin/users"
               className="text-sm text-gray-400 transition-colors hover:text-white"
             >
