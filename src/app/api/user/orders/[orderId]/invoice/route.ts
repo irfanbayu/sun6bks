@@ -37,7 +37,7 @@ export async function GET(
     );
   }
 
-  const pdfBuffer = generateInvoicePdf({
+  const pdfBuffer = await generateInvoicePdf({
     orderId,
     customerName: order.customer_name,
     customerEmail: order.customer_email,
