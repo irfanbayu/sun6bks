@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
-import { MidtransProvider } from "@/components/providers";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -9,21 +9,34 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SUN 6 BKS | Standupindo Bekasi",
-  description: "Komunitas Stand-up Comedy Bekasi - Event, Tiket, dan Komunitas Komedi Terbesar di Bekasi",
+  title: "Standupindo Bekasi Events",
+  description:
+    "Komunitas Stand-up Comedy Bekasi - Event, Tiket, dan Komunitas Komedi Terbesar di Bekasi",
 };
 
+/**
+ * Root layout — wraps the entire app with ClerkProvider when the key is
+ * available. During `next build` without env vars the provider is skipped
+ * so pre-rendering of the _not-found shell and other static pages succeeds.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+  const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  const content = (
     <html lang="id">
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}
-        <MidtransProvider />
       </body>
     </html>
   );
+
+  if (!hasClerkKey) {
+    return content;
+  }
+
+  return <ClerkProvider>{content}</ClerkProvider>;
 }

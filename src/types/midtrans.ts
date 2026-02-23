@@ -31,13 +31,15 @@ declare global {
 }
 
 export type CreateTransactionParams = {
-  eventId: number | string;
+  eventId: number;
+  categoryId: number;
   eventTitle: string;
   quantity: number;
   pricePerTicket: number;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  clerkUserId?: string;
 };
 
 export type SnapTokenResponse = {

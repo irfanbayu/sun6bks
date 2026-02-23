@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUser, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Mic2, Ticket } from "lucide-react";
+import { Menu, X, Mic2, Ticket, LogIn, LayoutDashboard, ShieldCheck } from "lucide-react";
 
 const NAV_LINKS = [
   { name: "Events", href: "#events" },
@@ -11,7 +13,13 @@ const NAV_LINKS = [
   { name: "Pricing", href: "#pricing" },
 ];
 
-export const Navbar = () => {
+type NavbarProps = {
+  onBuyTicket?: () => void;
+  isAdmin?: boolean;
+};
+
+export const Navbar = ({ onBuyTicket, isAdmin }: NavbarProps) => {
+  const { isSignedIn } = useUser();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -29,6 +37,15 @@ export const Navbar = () => {
     const element = document.querySelector(href);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleBuyTicket = () => {
+    setIsMobileMenuOpen(false);
+    if (onBuyTicket) {
+      onBuyTicket();
+    } else {
+      handleNavClick("#events");
     }
   };
 
@@ -61,10 +78,7 @@ export const Navbar = () => {
                 <Mic2 className="h-5 w-5 text-sun6bks-dark" />
               </div>
               <div>
-                <span className="text-lg font-bold text-white">SUN 6 BKS</span>
-                <span className="ml-2 hidden text-xs text-sun6bks-gold sm:inline">
-                  Bekasi
-                </span>
+                <span className="text-lg font-bold text-white">Standupindo Bekasi Events</span>
               </div>
             </motion.a>
 
@@ -85,6 +99,7 @@ export const Navbar = () => {
                 </motion.a>
               ))}
               <motion.button
+                onClick={handleBuyTicket}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center gap-2 rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange px-5 py-2 text-sm font-bold text-sun6bks-dark shadow-lg shadow-sun6bks-gold/20"
@@ -92,6 +107,38 @@ export const Navbar = () => {
                 <Ticket className="h-4 w-4" />
                 Beli Tiket
               </motion.button>
+
+              {/* Auth: Sign In or User Menu */}
+              {isSignedIn ? (
+                <div className="flex items-center gap-3">
+                  {isAdmin ? (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-1.5 text-sm font-medium text-sun6bks-gold transition-colors hover:text-sun6bks-orange"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/user"
+                      className="flex items-center gap-1.5 text-sm font-medium text-gray-300 transition-colors hover:text-sun6bks-gold"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  )}
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-sun6bks-gold/50 hover:text-white"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Masuk
+                </Link>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -138,14 +185,60 @@ export const Navbar = () => {
                     {link.name}
                   </motion.a>
                 ))}
+
+                {/* Mobile Auth */}
+                {isSignedIn ? (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    {isAdmin ? (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-2 text-lg font-medium text-sun6bks-orange"
+                      >
+                        <ShieldCheck className="h-5 w-5" />
+                        Admin Panel
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/user"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-2 text-lg font-medium text-sun6bks-gold"
+                      >
+                        <LayoutDashboard className="h-5 w-5" />
+                        Dashboard Saya
+                      </Link>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 text-lg font-medium text-gray-300 transition-colors hover:text-sun6bks-gold"
+                    >
+                      <LogIn className="h-5 w-5" />
+                      Masuk
+                    </Link>
+                  </motion.div>
+                )}
+
                 <motion.button
+                  onClick={handleBuyTicket}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
+                  transition={{ delay: 0.5 }}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange py-3 font-bold text-sun6bks-dark"
                 >
                   <Ticket className="h-5 w-5" />
-                  Beli Tiket Rp50K
+                  Beli Tiket
                 </motion.button>
               </div>
             </div>

@@ -17,6 +17,9 @@
 # Misc
 .DS_Store
 *.pem
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Debug
 npm-debug.log*
@@ -26,6 +29,8 @@ yarn-error.log*
 # Local env files
 .env*.local
 .env
+.env.production
+.env.staging
 
 # Vercel
 .vercel
@@ -43,3 +48,65 @@ next-env.d.ts
 # Logs
 logs
 *.log
+
+# Temp & Backup
+*.tmp
+*.temp
+*.bak
+
+# Turbo
+.turbo
+
+# Supabase
+.supabase/
+
+# Cursor & Agents
+/.cursor/
+/.agents/
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# OS generated files
+*.stackdump
+
+# Executables & Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package managers
+yarn.lock
+pnpm-lock.yaml
+
+# Sentry
+.sentryclirc
+
+# Storybook
+storybook-static/
+
+# PWA
+/public/sw.js
+/public/workbox-*.js
+/public/swe-worker-*.js
+
+# Prisma (if used)
+prisma/*.db
+prisma/*.db-journal
+
+# ESLint & Prettier cache
+.eslintcache
+.prettiercache
+
+# Docker
+docker-compose.override.yml
+
+# ngrok
+ngrok
+ngrok.exe
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

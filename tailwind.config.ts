@@ -50,7 +50,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // SUN 6 BKS Custom Colors
+        // Standupindo Bekasi Events Custom Colors
         sun6bks: {
           gold: "#FFD700",
           orange: "#FF6B35",
