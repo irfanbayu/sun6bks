@@ -124,9 +124,9 @@ const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
             venueMapsUrl={landingEvent.venue_maps_url}
           />
         ) : null}
-        <PricingSection
-          dbCategories={
-            landingEvent?.categories.map((c) => ({
+        {landingEvent && landingEvent.categories.length > 0 ? (
+          <PricingSection
+            dbCategories={landingEvent.categories.map((c) => ({
               id: c.id,
               name: c.name,
               price: c.price,
@@ -135,10 +135,10 @@ const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
               sort_order: c.sort_order,
               is_active: true,
               ticket_stocks: { remaining_stock: c.spotsLeft },
-            })) ?? []
-          }
-          onBuyCategory={handleOpenCheckout}
-        />
+            }))}
+            onBuyCategory={handleOpenCheckout}
+          />
+        ) : null}
         <FooterSection />
       </main>
       <BuyTicketModal

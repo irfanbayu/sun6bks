@@ -44,6 +44,9 @@ export const HeroSection = ({
   landingEvent,
   onBuyTicket,
 }: HeroSectionProps) => {
+  const isTicketAvailable = Boolean(
+    landingEvent && landingEvent.categories.length > 0,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -62,6 +65,8 @@ export const HeroSection = ({
   };
 
   const handleCtaClick = () => {
+    if (!isTicketAvailable) return;
+
     if (onBuyTicket) {
       onBuyTicket();
     } else {
@@ -79,7 +84,9 @@ export const HeroSection = ({
   const cheapestPrice = landingEvent?.categories.length
     ? Math.min(...landingEvent.categories.map((c) => c.price))
     : 50000;
-  const ctaLabel = `Beli Tiket ${formatPrice(cheapestPrice)}`;
+  const ctaLabel = isTicketAvailable
+    ? `Beli Tiket ${formatPrice(cheapestPrice)}`
+    : "Event Belum Tersedia";
 
   return (
     <section
@@ -164,16 +171,18 @@ export const HeroSection = ({
           </span> */}
         </motion.h1>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          className="mb-8 rounded-full border border-sun6bks-gold/30 bg-sun6bks-gold/10 px-6 py-3 backdrop-blur-sm"
-        >
-          <p className="text-lg font-bold text-sun6bks-gold md:text-xl">
-            {dateBadge}
-          </p>
-        </motion.div>
+        {landingEvent ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="mb-8 rounded-full border border-sun6bks-gold/30 bg-sun6bks-gold/10 px-6 py-3 backdrop-blur-sm"
+          >
+            <p className="text-lg font-bold text-sun6bks-gold md:text-xl">
+              {dateBadge}
+            </p>
+          </motion.div>
+        ) : null}
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -191,13 +200,20 @@ export const HeroSection = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={isTicketAvailable ? { scale: 1.05 } : undefined}
+          whileTap={isTicketAvailable ? { scale: 0.95 } : undefined}
           onClick={handleCtaClick}
-          className="group relative overflow-hidden rounded-full bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange px-8 py-4 text-lg font-bold text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 transition-all duration-300 hover:shadow-sun6bks-gold/40 md:px-10 md:py-5 md:text-xl"
+          disabled={!isTicketAvailable}
+          className={`group relative overflow-hidden rounded-full px-8 py-4 text-lg font-bold transition-all duration-300 md:px-10 md:py-5 md:text-xl ${
+            isTicketAvailable
+              ? "bg-gradient-to-r from-sun6bks-gold to-sun6bks-orange text-sun6bks-dark shadow-lg shadow-sun6bks-gold/25 hover:shadow-sun6bks-gold/40"
+              : "cursor-not-allowed bg-white/10 text-gray-300"
+          }`}
         >
           <span className="relative z-10">{ctaLabel}</span>
-          <div className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-300 group-hover:translate-x-0" />
+          {isTicketAvailable ? (
+            <div className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-300 group-hover:translate-x-0" />
+          ) : null}
         </motion.button>
       </motion.div>
 
