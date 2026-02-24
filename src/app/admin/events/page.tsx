@@ -24,6 +24,7 @@ export default async function AdminEventsPage() {
       image: p.image ?? "",
       instagram: p.instagram ?? "",
       youtube: p.youtube ?? "",
+      description: p.description ?? "",
     })),
     image_url: e.image_url,
     is_published: e.is_published,

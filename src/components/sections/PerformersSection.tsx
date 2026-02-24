@@ -10,6 +10,7 @@ type Performer = {
   image: string;
   instagram: string;
   youtube: string;
+  description: string;
 };
 
 type PerformersSectionProps = {
@@ -126,9 +127,14 @@ export const PerformersSection = ({ performers }: PerformersSectionProps) => {
 
               {/* Name */}
               <div className="text-center">
-                <h3 className="mb-3 text-xl font-bold text-white transition-colors group-hover:text-sun6bks-gold">
+                <h3 className="mb-1 text-xl font-bold text-white transition-colors group-hover:text-sun6bks-gold">
                   {performer.name}
                 </h3>
+                {performer.description ? (
+                  <p className="mb-3 text-sm text-gray-400">
+                    {performer.description}
+                  </p>
+                ) : null}
 
                 {/* Social Links */}
                 <div className="flex items-center justify-center gap-3">

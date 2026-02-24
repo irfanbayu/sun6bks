@@ -21,6 +21,7 @@ const mapToLandingEvent = (ev: EventWithCategories): LandingEvent => {
       image: p.image ?? "",
       instagram: p.instagram ?? "",
       youtube: p.youtube ?? "",
+      description: p.description ?? "",
     })),
     categories: activeCategories
       .sort((a, b) => a.sort_order - b.sort_order)

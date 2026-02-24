@@ -74,6 +74,7 @@ const EMPTY_PERFORMER: PerformerInput = {
   image: "",
   instagram: "",
   youtube: "",
+  description: "",
 };
 
 const EMPTY_CATEGORY: CategoryData = {
@@ -193,6 +194,7 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
               image: p.image ?? "",
               instagram: p.instagram ?? "",
               youtube: p.youtube ?? "",
+              description: p.description ?? "",
             }))
           : [{ ...EMPTY_PERFORMER }],
       image_url: event.image_url ?? "",
@@ -1056,6 +1058,20 @@ const EventForm = ({
                       onPerformerChange(i, "name", e.target.value)
                     }
                     placeholder="Nama performer"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    Keterangan Peran
+                  </label>
+                  <input
+                    type="text"
+                    value={performer.description}
+                    onChange={(e) =>
+                      onPerformerChange(i, "description", e.target.value)
+                    }
+                    placeholder="Contoh: MC, Guest Star, Open Mic"
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
                   />
                 </div>

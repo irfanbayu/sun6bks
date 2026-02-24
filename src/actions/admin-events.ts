@@ -51,6 +51,24 @@ const generateSlug = (title: string): string =>
     .replace(/-+/g, "-")
     .trim();
 
+const normalizePerformers = (
+  performers: PerformerInput[] | undefined,
+): PerformerInput[] => {
+  if (!performers?.length) {
+    return [];
+  }
+
+  return performers
+    .map((performer) => ({
+      name: (performer.name ?? "").trim(),
+      image: (performer.image ?? "").trim(),
+      instagram: (performer.instagram ?? "").trim(),
+      youtube: (performer.youtube ?? "").trim(),
+      description: (performer.description ?? "").trim(),
+    }))
+    .filter((performer) => performer.name);
+};
+
 /**
  * Fetch all events with categories and stocks for admin listing.
  */
@@ -99,7 +117,7 @@ export const createEvent = async (input: EventInput): Promise<ActionResult> => {
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
         venue_maps_url: (input.venue_maps_url ?? "").trim() || null,
-        performers: (input.performers ?? []).filter((p) => p.name.trim()),
+        performers: normalizePerformers(input.performers),
         image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,
       })
@@ -199,7 +217,7 @@ export const updateEvent = async (
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
         venue_maps_url: (input.venue_maps_url ?? "").trim() || null,
-        performers: (input.performers ?? []).filter((p) => p.name.trim()),
+        performers: normalizePerformers(input.performers),
         image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,
       })
@@ -225,7 +243,9 @@ export const updateEvent = async (
     );
 
     // 3. Delete removed categories (CASCADE will delete stocks too)
-    const toDelete = [...existingCatIds].filter((id) => !inputCatIds.has(id));
+    const toDelete = Array.from(existingCatIds).filter(
+      (id) => !inputCatIds.has(id),
+    );
     if (toDelete.length > 0) {
       const { error: deleteError } = await supabaseAdmin
         .from("ticket_categories")

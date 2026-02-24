@@ -10,6 +10,7 @@ export type PerformerData = {
   image: string;
   instagram: string;
   youtube: string;
+  description: string;
 };
 
 export type DbEvent = {

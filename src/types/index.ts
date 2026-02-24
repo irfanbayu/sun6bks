@@ -19,6 +19,7 @@ export type Performer = {
   image: string;
   instagram: string;
   youtube: string;
+  description: string;
 };
 
 export type Venue = {
