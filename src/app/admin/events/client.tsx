@@ -1,8 +1,25 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, type CSSProperties, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Plus,
   Pencil,
@@ -19,6 +36,7 @@ import {
   Ticket,
   Upload,
   ImageIcon,
+  GripVertical,
 } from "lucide-react";
 import {
   createEvent,
@@ -260,6 +278,25 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
     }));
   }, []);
 
+  const handleMovePerformer = useCallback((fromIndex: number, toIndex: number) => {
+    setForm((prev) => {
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= prev.performers.length ||
+        toIndex >= prev.performers.length
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        performers: arrayMove(prev.performers, fromIndex, toIndex),
+      };
+    });
+  }, []);
+
   const handleUploadPerformerImage = useCallback(
     async (index: number, file: File) => {
       setUploadingIndex(index);
@@ -478,6 +515,7 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
           onUploadPerformerImage={handleUploadPerformerImage}
           onAddPerformer={handleAddPerformer}
           onRemovePerformer={handleRemovePerformer}
+          onMovePerformer={handleMovePerformer}
           onCategoryChange={handleCategoryChange}
           onCategoryFeatureChange={handleCategoryFeatureChange}
           onAddCategoryFeature={handleAddCategoryFeature}
@@ -720,6 +758,7 @@ type EventFormProps = {
   onUploadPerformerImage: (index: number, file: File) => void;
   onAddPerformer: () => void;
   onRemovePerformer: (index: number) => void;
+  onMovePerformer: (fromIndex: number, toIndex: number) => void;
   onCategoryChange: (
     catIndex: number,
     field: keyof CategoryData,
@@ -738,6 +777,203 @@ type EventFormProps = {
   onClose: () => void;
 };
 
+type SortablePerformerCardProps = {
+  id: string;
+  index: number;
+  performer: PerformerInput;
+  totalPerformers: number;
+  fileInputRefs: MutableRefObject<(HTMLInputElement | null)[]>;
+  uploadingIndex: number | null;
+  onPerformerChange: (index: number, field: keyof PerformerInput, value: string) => void;
+  onUploadPerformerImage: (index: number, file: File) => void;
+  onRemovePerformer: (index: number) => void;
+};
+
+const SortablePerformerCard = ({
+  id,
+  index,
+  performer,
+  totalPerformers,
+  fileInputRefs,
+  uploadingIndex,
+  onPerformerChange,
+  onUploadPerformerImage,
+  onRemovePerformer,
+}: SortablePerformerCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-lg border border-white/10 bg-white/[0.03] p-4 ${
+        isDragging ? "opacity-60" : "opacity-100"
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="cursor-grab rounded p-1 text-gray-500 transition-colors hover:bg-white/10 hover:text-sun6bks-gold active:cursor-grabbing"
+            title="Drag untuk ubah urutan"
+            aria-label={`Drag performer ${index + 1}`}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium text-gray-300">
+            Performer #{index + 1}
+          </span>
+        </div>
+        {totalPerformers > 1 && (
+          <button
+            type="button"
+            onClick={() => onRemovePerformer(index)}
+            className="flex items-center gap-1 text-xs text-red-400 transition-colors hover:text-red-300"
+          >
+            <Trash2 className="h-3 w-3" /> Hapus
+          </button>
+        )}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-gray-500">
+            Foto
+          </label>
+          <div className="flex items-center gap-4">
+            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5">
+              {performer.image ? (
+                <Image
+                  src={performer.image}
+                  alt={performer.name || "Performer"}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <ImageIcon className="h-6 w-6 text-gray-600" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRefs.current[index]?.click()}
+                  disabled={uploadingIndex === index}
+                  className="flex items-center gap-1.5 rounded-lg bg-sun6bks-gold/10 px-3 py-1.5 text-xs font-medium text-sun6bks-gold transition-colors hover:bg-sun6bks-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {uploadingIndex === index ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {uploadingIndex === index ? "Uploading..." : "Upload Foto"}
+                </button>
+                {performer.image && (
+                  <button
+                    type="button"
+                    onClick={() => onPerformerChange(index, "image", "")}
+                    className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    title="Hapus foto"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={(el) => { fileInputRefs.current[index] = el; }}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onUploadPerformerImage(index, file);
+                  e.target.value = "";
+                }}
+              />
+              <input
+                type="text"
+                value={performer.image}
+                onChange={(e) =>
+                  onPerformerChange(index, "image", e.target.value)
+                }
+                placeholder="Atau paste URL: https://..."
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">
+            Nama *
+          </label>
+          <input
+            type="text"
+            value={performer.name}
+            onChange={(e) =>
+              onPerformerChange(index, "name", e.target.value)
+            }
+            placeholder="Nama performer"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">
+            Keterangan Peran
+          </label>
+          <input
+            type="text"
+            value={performer.description}
+            onChange={(e) =>
+              onPerformerChange(index, "description", e.target.value)
+            }
+            placeholder="Contoh: MC, Guest Star, Open Mic"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">
+            Instagram
+          </label>
+          <input
+            type="text"
+            value={performer.instagram}
+            onChange={(e) =>
+              onPerformerChange(index, "instagram", e.target.value)
+            }
+            placeholder="@username"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">
+            YouTube
+          </label>
+          <input
+            type="text"
+            value={performer.youtube}
+            onChange={(e) =>
+              onPerformerChange(index, "youtube", e.target.value)
+            }
+            placeholder="@channel atau URL"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EventForm = ({
   form,
   editingEventId,
@@ -749,6 +985,7 @@ const EventForm = ({
   onUploadPerformerImage,
   onAddPerformer,
   onRemovePerformer,
+  onMovePerformer,
   onCategoryChange,
   onCategoryFeatureChange,
   onAddCategoryFeature,
@@ -760,6 +997,31 @@ const EventForm = ({
 }: EventFormProps) => {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const isSubmitting = loading === "create" || loading === "update";
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEndPerformer = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const activeIndex = Number.parseInt(activeId.replace("performer-", ""), 10);
+    const overIndex = Number.parseInt(overId.replace("performer-", ""), 10);
+
+    if (Number.isNaN(activeIndex) || Number.isNaN(overIndex)) {
+      return;
+    }
+
+    onMovePerformer(activeIndex, overIndex);
+  }, [onMovePerformer]);
 
   return (
     <div className="mb-8 rounded-xl border border-sun6bks-gold/30 bg-white/5 p-6">
@@ -952,161 +1214,33 @@ const EventForm = ({
             <Plus className="h-3 w-3" /> Tambah Performer
           </button>
         </div>
-        <div className="space-y-4">
-          {form.performers.map((performer, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-300">
-                  Performer #{i + 1}
-                </span>
-                {form.performers.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => onRemovePerformer(i)}
-                    className="flex items-center gap-1 text-xs text-red-400 transition-colors hover:text-red-300"
-                  >
-                    <Trash2 className="h-3 w-3" /> Hapus
-                  </button>
-                )}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {/* Foto Upload + Preview */}
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Foto
-                  </label>
-                  <div className="flex items-center gap-4">
-                    {/* Preview */}
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5">
-                      {performer.image ? (
-                        <Image
-                          src={performer.image}
-                          alt={performer.name || "Performer"}
-                          fill
-                          className="object-cover"
-                          sizes="64px"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <ImageIcon className="h-6 w-6 text-gray-600" />
-                        </div>
-                      )}
-                    </div>
-                    {/* Upload Button */}
-                    <div className="flex flex-1 flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRefs.current[i]?.click()}
-                          disabled={uploadingIndex === i}
-                          className="flex items-center gap-1.5 rounded-lg bg-sun6bks-gold/10 px-3 py-1.5 text-xs font-medium text-sun6bks-gold transition-colors hover:bg-sun6bks-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {uploadingIndex === i ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Upload className="h-3.5 w-3.5" />
-                          )}
-                          {uploadingIndex === i ? "Uploading..." : "Upload Foto"}
-                        </button>
-                        {performer.image && (
-                          <button
-                            type="button"
-                            onClick={() => onPerformerChange(i, "image", "")}
-                            className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                            title="Hapus foto"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        ref={(el) => { fileInputRefs.current[i] = el; }}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) onUploadPerformerImage(i, file);
-                          e.target.value = "";
-                        }}
-                      />
-                      <input
-                        type="text"
-                        value={performer.image}
-                        onChange={(e) =>
-                          onPerformerChange(i, "image", e.target.value)
-                        }
-                        placeholder="Atau paste URL: https://..."
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nama */}
-                <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Nama *
-                  </label>
-                  <input
-                    type="text"
-                    value={performer.name}
-                    onChange={(e) =>
-                      onPerformerChange(i, "name", e.target.value)
-                    }
-                    placeholder="Nama performer"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Keterangan Peran
-                  </label>
-                  <input
-                    type="text"
-                    value={performer.description}
-                    onChange={(e) =>
-                      onPerformerChange(i, "description", e.target.value)
-                    }
-                    placeholder="Contoh: MC, Guest Star, Open Mic"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Instagram
-                  </label>
-                  <input
-                    type="text"
-                    value={performer.instagram}
-                    onChange={(e) =>
-                      onPerformerChange(i, "instagram", e.target.value)
-                    }
-                    placeholder="@username"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    YouTube
-                  </label>
-                  <input
-                    type="text"
-                    value={performer.youtube}
-                    onChange={(e) =>
-                      onPerformerChange(i, "youtube", e.target.value)
-                    }
-                    placeholder="@channel atau URL"
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-                  />
-                </div>
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEndPerformer}
+        >
+          <SortableContext
+            items={form.performers.map((_, i) => `performer-${i}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {form.performers.map((performer, i) => (
+                <SortablePerformerCard
+                  key={`performer-${i}`}
+                  id={`performer-${i}`}
+                  index={i}
+                  performer={performer}
+                  totalPerformers={form.performers.length}
+                  fileInputRefs={fileInputRefs}
+                  uploadingIndex={uploadingIndex}
+                  onPerformerChange={onPerformerChange}
+                  onUploadPerformerImage={onUploadPerformerImage}
+                  onRemovePerformer={onRemovePerformer}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* ── Categories Section ── */}
