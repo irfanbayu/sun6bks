@@ -122,6 +122,7 @@ const HomePageClient = ({ landingEvent, isAdmin }: HomePageClientProps) => {
             venueLat={landingEvent.venue_lat}
             venueLng={landingEvent.venue_lng}
             venueMapsUrl={landingEvent.venue_maps_url}
+            venueImageUrl={landingEvent.venue_image_url}
           />
         ) : null}
         {landingEvent && landingEvent.categories.length > 0 ? (

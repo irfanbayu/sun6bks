@@ -46,7 +46,11 @@ import {
   type EventInput,
   type PerformerInput,
 } from "@/actions/admin-events";
-import { uploadPerformerImage } from "@/actions/admin-storage";
+import {
+  uploadEventPosterImage,
+  uploadPerformerImage,
+  uploadVenueImage,
+} from "@/actions/admin-storage";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -74,6 +78,7 @@ type EventData = {
   venue_lat: number | null;
   venue_lng: number | null;
   venue_maps_url: string | null;
+  venue_image_url: string | null;
   performers: PerformerInput[];
   image_url: string | null;
   is_published: boolean;
@@ -117,6 +122,7 @@ const EMPTY_FORM: EventInput = {
   venue_lat: null,
   venue_lng: null,
   venue_maps_url: "",
+  venue_image_url: "",
   performers: [{ ...EMPTY_PERFORMER }],
   image_url: "",
   is_published: false,
@@ -175,6 +181,8 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [isUploadingPoster, setIsUploadingPoster] = useState(false);
+  const [isUploadingVenueImage, setIsUploadingVenueImage] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     success: boolean;
@@ -205,6 +213,7 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
       venue_lat: event.venue_lat,
       venue_lng: event.venue_lng,
       venue_maps_url: event.venue_maps_url ?? "",
+      venue_image_url: event.venue_image_url ?? "",
       performers:
         event.performers.length > 0
           ? event.performers.map((p) => ({
@@ -322,6 +331,40 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
     },
     []
   );
+
+  const handleUploadPosterImage = useCallback(async (file: File) => {
+    setIsUploadingPoster(true);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const result = await uploadEventPosterImage(formData);
+    if (result.success) {
+      setForm((prev) => ({ ...prev, image_url: result.url }));
+    } else {
+      setMessage({ text: result.message, success: false });
+    }
+
+    setIsUploadingPoster(false);
+  }, []);
+
+  const handleUploadVenueImage = useCallback(async (file: File) => {
+    setIsUploadingVenueImage(true);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const result = await uploadVenueImage(formData);
+    if (result.success) {
+      setForm((prev) => ({ ...prev, venue_image_url: result.url }));
+    } else {
+      setMessage({ text: result.message, success: false });
+    }
+
+    setIsUploadingVenueImage(false);
+  }, []);
 
   // ─── Category Handlers ───────────────────────────────────
 
@@ -509,10 +552,14 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
           editingEventId={editingEventId}
           loading={loading}
           uploadingIndex={uploadingIndex}
+          isUploadingPoster={isUploadingPoster}
+          isUploadingVenueImage={isUploadingVenueImage}
           message={message}
           onFieldChange={handleFieldChange}
           onPerformerChange={handlePerformerChange}
           onUploadPerformerImage={handleUploadPerformerImage}
+          onUploadPosterImage={handleUploadPosterImage}
+          onUploadVenueImage={handleUploadVenueImage}
           onAddPerformer={handleAddPerformer}
           onRemovePerformer={handleRemovePerformer}
           onMovePerformer={handleMovePerformer}
@@ -752,10 +799,14 @@ type EventFormProps = {
   editingEventId: number | null;
   loading: string | null;
   uploadingIndex: number | null;
+  isUploadingPoster: boolean;
+  isUploadingVenueImage: boolean;
   message: { text: string; success: boolean } | null;
   onFieldChange: (field: keyof EventInput, value: string | boolean | null) => void;
   onPerformerChange: (index: number, field: keyof PerformerInput, value: string) => void;
   onUploadPerformerImage: (index: number, file: File) => void;
+  onUploadPosterImage: (file: File) => void;
+  onUploadVenueImage: (file: File) => void;
   onAddPerformer: () => void;
   onRemovePerformer: (index: number) => void;
   onMovePerformer: (fromIndex: number, toIndex: number) => void;
@@ -979,10 +1030,14 @@ const EventForm = ({
   editingEventId,
   loading,
   uploadingIndex,
+  isUploadingPoster,
+  isUploadingVenueImage,
   message,
   onFieldChange,
   onPerformerChange,
   onUploadPerformerImage,
+  onUploadPosterImage,
+  onUploadVenueImage,
   onAddPerformer,
   onRemovePerformer,
   onMovePerformer,
@@ -996,6 +1051,8 @@ const EventForm = ({
   onClose,
 }: EventFormProps) => {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const posterFileInputRef = useRef<HTMLInputElement | null>(null);
+  const venueFileInputRef = useRef<HTMLInputElement | null>(null);
   const isSubmitting = loading === "create" || loading === "update";
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1171,18 +1228,143 @@ const EventForm = ({
             />
           </div>
 
-          {/* Image URL */}
+          {/* Poster + Venue Image */}
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs text-gray-400">
-              URL Gambar / Poster
-            </label>
-            <input
-              type="url"
-              value={form.image_url}
-              onChange={(e) => onFieldChange("image_url", e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <label className="mb-2 block text-xs text-gray-400">
+                  Poster Upcoming Show
+                </label>
+                <div className="mb-3 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                  {form.image_url ? (
+                    <div className="relative h-40 w-full">
+                      <Image
+                        src={form.image_url}
+                        alt={form.title || "Event poster"}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-40 items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-gray-600" />
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => posterFileInputRef.current?.click()}
+                    disabled={isUploadingPoster}
+                    className="flex items-center gap-1.5 rounded-lg bg-sun6bks-gold/10 px-3 py-1.5 text-xs font-medium text-sun6bks-gold transition-colors hover:bg-sun6bks-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isUploadingPoster ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    {isUploadingPoster ? "Uploading..." : "Upload Poster"}
+                  </button>
+                  {form.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => onFieldChange("image_url", "")}
+                      className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      title="Hapus poster"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={posterFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onUploadPosterImage(file);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  type="url"
+                  value={form.image_url}
+                  onChange={(e) => onFieldChange("image_url", e.target.value)}
+                  placeholder="Atau paste URL poster: https://..."
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                />
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <label className="mb-2 block text-xs text-gray-400">
+                  Foto Venue
+                </label>
+                <div className="mb-3 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                  {form.venue_image_url ? (
+                    <div className="relative h-40 w-full">
+                      <Image
+                        src={form.venue_image_url}
+                        alt={form.venue || "Venue image"}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-40 items-center justify-center">
+                      <MapPin className="h-8 w-8 text-gray-600" />
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => venueFileInputRef.current?.click()}
+                    disabled={isUploadingVenueImage}
+                    className="flex items-center gap-1.5 rounded-lg bg-sun6bks-gold/10 px-3 py-1.5 text-xs font-medium text-sun6bks-gold transition-colors hover:bg-sun6bks-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isUploadingVenueImage ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    {isUploadingVenueImage ? "Uploading..." : "Upload Venue"}
+                  </button>
+                  {form.venue_image_url && (
+                    <button
+                      type="button"
+                      onClick={() => onFieldChange("venue_image_url", "")}
+                      className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      title="Hapus foto venue"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={venueFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onUploadVenueImage(file);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  type="url"
+                  value={form.venue_image_url}
+                  onChange={(e) =>
+                    onFieldChange("venue_image_url", e.target.value)
+                  }
+                  placeholder="Atau paste URL venue: https://..."
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-gray-600 focus:border-sun6bks-gold/50 focus:outline-none focus:ring-1 focus:ring-sun6bks-gold/50"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Published */}

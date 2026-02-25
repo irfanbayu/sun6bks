@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { MapPin, Navigation } from "lucide-react";
+import Image from "next/image";
 
 type VenuesSectionProps = {
   venueName: string;
@@ -10,6 +11,7 @@ type VenuesSectionProps = {
   venueLat: number | null;
   venueLng: number | null;
   venueMapsUrl: string | null;
+  venueImageUrl: string | null;
 };
 
 export const VenuesSection = ({
@@ -18,6 +20,7 @@ export const VenuesSection = ({
   venueLat,
   venueLng,
   venueMapsUrl,
+  venueImageUrl,
 }: VenuesSectionProps) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
@@ -110,9 +113,19 @@ export const VenuesSection = ({
           >
             {/* Image Placeholder */}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-sun6bks-gold/10 to-sun6bks-orange/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <MapPin className="h-16 w-16 text-sun6bks-gold/20" />
-              </div>
+              {venueImageUrl ? (
+                <Image
+                  src={venueImageUrl}
+                  alt={venueName}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 640px"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <MapPin className="h-16 w-16 text-sun6bks-gold/20" />
+                </div>
+              )}
               {/* Location Badge */}
               <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-sun6bks-dark/80 px-3 py-1 text-xs font-semibold text-sun6bks-gold backdrop-blur-sm">
                 <Navigation className="h-3 w-3" />

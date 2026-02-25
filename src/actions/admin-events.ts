@@ -34,6 +34,7 @@ export type EventInput = {
   venue_lat: number | null;
   venue_lng: number | null;
   venue_maps_url: string;
+  venue_image_url: string;
   performers: PerformerInput[];
   image_url: string;
   is_published: boolean;
@@ -117,6 +118,7 @@ export const createEvent = async (input: EventInput): Promise<ActionResult> => {
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
         venue_maps_url: (input.venue_maps_url ?? "").trim() || null,
+        venue_image_url: (input.venue_image_url ?? "").trim() || null,
         performers: normalizePerformers(input.performers),
         image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,
@@ -217,6 +219,7 @@ export const updateEvent = async (
         venue_lat: input.venue_lat,
         venue_lng: input.venue_lng,
         venue_maps_url: (input.venue_maps_url ?? "").trim() || null,
+        venue_image_url: (input.venue_image_url ?? "").trim() || null,
         performers: normalizePerformers(input.performers),
         image_url: (input.image_url ?? "").trim() || null,
         is_published: input.is_published,

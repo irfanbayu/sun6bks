@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Calendar, Clock, MapPin, Users, Ticket } from "lucide-react";
+import Image from "next/image";
 import type { LandingEvent } from "@/types";
 
 type EventsSectionProps = {
@@ -110,9 +111,19 @@ export const EventsSection = ({
         >
           <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm">
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-sun6bks-gold/20 to-sun6bks-orange/20">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Ticket className="h-16 w-16 text-sun6bks-gold/30" />
-              </div>
+              {landingEvent.image_url ? (
+                <Image
+                  src={landingEvent.image_url}
+                  alt={landingEvent.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 768px"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Ticket className="h-16 w-16 text-sun6bks-gold/30" />
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-sun6bks-dark via-transparent to-transparent" />
             </div>
             <div className="p-6">

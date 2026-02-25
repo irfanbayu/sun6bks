@@ -16,6 +16,8 @@ const mapToLandingEvent = (ev: EventWithCategories): LandingEvent => {
     venue_lat: ev.venue_lat ?? null,
     venue_lng: ev.venue_lng ?? null,
     venue_maps_url: ev.venue_maps_url ?? null,
+    venue_image_url: ev.venue_image_url ?? null,
+    image_url: ev.image_url ?? null,
     performers: (ev.performers ?? []).map((p) => ({
       name: p.name ?? "",
       image: p.image ?? "",

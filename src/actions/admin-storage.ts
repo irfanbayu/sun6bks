@@ -3,7 +3,8 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 
-const BUCKET = "performers";
+const PERFORMER_BUCKET = "performers";
+const EVENT_MEDIA_BUCKET = PERFORMER_BUCKET;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 type UploadResult = {
@@ -12,13 +13,11 @@ type UploadResult = {
   message: string;
 };
 
-/**
- * Upload a performer image to Supabase Storage.
- * Accepts a FormData with a "file" field.
- * Returns the public URL of the uploaded image.
- */
-export const uploadPerformerImage = async (
-  formData: FormData
+const uploadImageToBucket = async (
+  formData: FormData,
+  bucket: string,
+  folder: string,
+  logLabel: string,
 ): Promise<UploadResult> => {
   await requireAdmin();
 
@@ -46,21 +45,21 @@ export const uploadPerformerImage = async (
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const fileName = `${timestamp}-${randomStr}.${ext}`;
+    const fileName = `${folder}/${timestamp}-${randomStr}.${ext}`;
 
     const { error } = await supabaseAdmin.storage
-      .from(BUCKET)
+      .from(bucket)
       .upload(fileName, file, {
         contentType: file.type,
         upsert: false,
       });
 
     if (error) {
-      console.error("[uploadPerformerImage] Upload error:", error);
+      console.error(`[${logLabel}] Upload error:`, error);
       return { success: false, url: "", message: error.message };
     }
 
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fileName}`;
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
 
     return {
       success: true,
@@ -68,11 +67,55 @@ export const uploadPerformerImage = async (
       message: "Foto berhasil diupload.",
     };
   } catch (err) {
-    console.error("[uploadPerformerImage] Error:", err);
+    console.error(`[${logLabel}] Error:`, err);
     return {
       success: false,
       url: "",
       message: err instanceof Error ? err.message : "Gagal upload foto.",
     };
   }
+};
+
+/**
+ * Upload a performer image to Supabase Storage.
+ * Accepts a FormData with a "file" field.
+ * Returns the public URL of the uploaded image.
+ */
+export const uploadPerformerImage = async (
+  formData: FormData
+): Promise<UploadResult> => {
+  return uploadImageToBucket(
+    formData,
+    PERFORMER_BUCKET,
+    "performers",
+    "uploadPerformerImage"
+  );
+};
+
+/**
+ * Upload event poster image used for upcoming show card.
+ */
+export const uploadEventPosterImage = async (
+  formData: FormData
+): Promise<UploadResult> => {
+  return uploadImageToBucket(
+    formData,
+    EVENT_MEDIA_BUCKET,
+    "event-posters",
+    "uploadEventPosterImage"
+  );
+};
+
+/**
+ * Upload venue image shown in venue section.
+ */
+export const uploadVenueImage = async (
+  formData: FormData
+): Promise<UploadResult> => {
+  return uploadImageToBucket(
+    formData,
+    EVENT_MEDIA_BUCKET,
+    "venue-images",
+    "uploadVenueImage"
+  );
 };
