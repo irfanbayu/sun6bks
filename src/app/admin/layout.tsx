@@ -58,6 +58,12 @@ export default async function AdminLayout({
               Tiket
             </Link>
             <Link
+              href="/admin/checkin"
+              className="text-sm text-gray-400 transition-colors hover:text-white"
+            >
+              Check-in
+            </Link>
+            <Link
               href="/admin/users"
               className="text-sm text-gray-400 transition-colors hover:text-white"
             >
