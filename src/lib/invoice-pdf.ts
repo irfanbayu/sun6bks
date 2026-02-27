@@ -231,8 +231,8 @@ export const generateInvoicePdf = async (data: InvoiceData): Promise<Buffer> => 
 
     y += 4;
 
-    const qrSize = 22;
-    const rowHeight = qrSize + 6;
+    const qrSize = 30;
+    const rowHeight = qrSize + 8;
     const pageHeight = doc.internal.pageSize.getHeight();
 
     for (const ticket of data.tickets) {
@@ -242,7 +242,7 @@ export const generateInvoicePdf = async (data: InvoiceData): Promise<Buffer> => 
       }
 
       const qrDataUrl = await QRCode.toDataURL(ticket.ticket_code, {
-        width: 200,
+        width: 320,
         margin: 1,
         errorCorrectionLevel: "M",
         color: { dark: "#000000", light: "#ffffff" },
