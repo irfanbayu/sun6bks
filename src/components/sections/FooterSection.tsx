@@ -54,7 +54,7 @@ export const FooterSection = () => {
     <footer id="footer" className="relative overflow-hidden bg-sun6bks-dark">
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
           {/* Brand */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -140,33 +140,6 @@ export const FooterSection = () => {
             </ul>
           </motion.div>
 
-          {/* Newsletter */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <h4 className="mb-4 font-semibold text-white">Newsletter</h4>
-            <p className="mb-4 text-sm text-gray-400">
-              Dapatkan info event terbaru langsung ke emailmu!
-            </p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Email kamu..."
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-gray-500 outline-none transition-colors focus:border-sun6bks-gold/50"
-              />
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="rounded-lg bg-sun6bks-gold px-4 py-2 text-sm font-semibold text-sun6bks-dark transition-colors hover:bg-sun6bks-orange"
-              >
-                Subscribe
-              </motion.button>
-            </form>
-          </motion.div>
         </div>
 
         {/* Bottom Bar */}
