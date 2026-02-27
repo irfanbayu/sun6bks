@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ChevronDown, Mic2, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles } from "lucide-react";
 import type { LandingEvent } from "@/types";
+import logoSuibks from "@/public/img/logosuibks.png";
 
 const formatPrice = (price: number): string =>
   new Intl.NumberFormat("id-ID", {
@@ -138,9 +140,14 @@ export const HeroSection = ({
           transition={{ duration: 0.8, type: "spring" }}
           className="relative mb-8"
         >
-          <div className="absolute -inset-4 animate-pulse rounded-full bg-sun6bks-gold/20 blur-xl" />
-          <div className="relative rounded-full border-2 border-sun6bks-gold/50 bg-sun6bks-dark p-6">
-            <Mic2 className="h-12 w-12 text-sun6bks-gold md:h-16 md:w-16" />
+          <div className="absolute -inset-4 animate-pulse rounded-full bg-white/20 blur-xl" />
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-sun6bks-gold/50 bg-sun6bks-dark p-4 md:h-28 md:w-28">
+            <Image
+              src={logoSuibks}
+              alt="Logo Standupindo Bekasi"
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
         </motion.div>
 
