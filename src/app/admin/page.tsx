@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
+import Link from "next/link";
+import { formatCurrencyIDR } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
 
@@ -28,18 +30,10 @@ export default async function AdminDashboardPage() {
   const totalEvents = eventsResult.count ?? 0;
   const totalActiveTickets = ticketsResult.count ?? 0;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const stats = [
     {
       label: "Total Revenue",
-      value: formatCurrency(totalRevenue),
+      value: formatCurrencyIDR(totalRevenue),
       color: "text-green-400",
     },
     {
@@ -80,7 +74,7 @@ export default async function AdminDashboardPage() {
 
       {/* Quick Links */}
       <div className="grid gap-6 md:grid-cols-3">
-        <a
+        <Link
           href="/admin/transactions"
           className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
         >
@@ -90,8 +84,8 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-gray-400">
             Lihat daftar transaksi, re-check status, atau manual override.
           </p>
-        </a>
-        <a
+        </Link>
+        <Link
           href="/admin/events"
           className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
         >
@@ -101,8 +95,8 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-gray-400">
             Tambah, edit, hapus events dan kategori tiket.
           </p>
-        </a>
-        <a
+        </Link>
+        <Link
           href="/admin/users"
           className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
         >
@@ -112,7 +106,7 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-gray-400">
             Promote / demote role user dan lihat daftar user terdaftar.
           </p>
-        </a>
+        </Link>
       </div>
     </div>
   );

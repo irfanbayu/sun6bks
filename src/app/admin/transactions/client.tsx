@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { recheckTransaction, manualOverride } from "@/actions/admin";
+import { formatCurrencyIDR, formatDateIDTimeShort } from "@/lib/formatters";
 
 type Transaction = {
   id: number;
@@ -62,28 +63,6 @@ const STATUS_CONFIG: Record<
     color: "text-blue-400",
     bg: "bg-blue-400/10",
   },
-};
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
-const formatDate = (dateStr: string) => {
-  try {
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
 };
 
 export const AdminTransactionsClient = ({
@@ -286,7 +265,7 @@ export const AdminTransactionsClient = ({
                     </div>
                   </td>
                   <td className="px-4 py-3 font-medium text-white">
-                    {formatCurrency(t.amount)}
+                    {formatCurrencyIDR(t.amount)}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -309,7 +288,7 @@ export const AdminTransactionsClient = ({
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-400">
-                    {formatDate(t.createdAt)}
+                    {formatDateIDTimeShort(t.createdAt)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">

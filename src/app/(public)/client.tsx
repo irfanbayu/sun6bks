@@ -2,14 +2,14 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
-import { Navbar } from "@/components/layout";
+import { Navbar } from "@/components/layout/Navbar";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { EventsSection } from "@/components/sections/EventsSection";
 import { PerformersSection } from "@/components/sections/PerformersSection";
 import { VenuesSection } from "@/components/sections/VenuesSection";
 import { PricingSection } from "@/components/sections/PricingSection";
 import { FooterSection } from "@/components/sections/FooterSection";
-import { BuyTicketModal, type EventData } from "@/components/ui";
+import { BuyTicketModal, type EventData } from "@/components/ui/BuyTicketModal";
 import type { LandingEvent } from "@/types";
 
 type HomePageClientProps = {

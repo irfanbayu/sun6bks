@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,14 +22,32 @@ export const Navbar = ({ onBuyTicket, isAdmin }: NavbarProps) => {
   const { isSignedIn } = useUser();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const scrollRafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+    const updateScrolledState = () => {
+      const nextIsScrolled = window.scrollY > 50;
+      setIsScrolled((prev) => (prev === nextIsScrolled ? prev : nextIsScrolled));
+      scrollRafRef.current = null;
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      if (scrollRafRef.current !== null) {
+        return;
+      }
+
+      scrollRafRef.current = window.requestAnimationFrame(updateScrolledState);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
   }, []);
 
   const handleNavClick = (href: string) => {

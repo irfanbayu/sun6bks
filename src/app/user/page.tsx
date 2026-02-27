@@ -1,37 +1,10 @@
 import { getUserLastOrder, getUserOrders } from "@/actions/user";
 import { Ticket, ShoppingCart, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { formatCurrencyIDR, formatDateIDTimeShort } from "@/lib/formatters";
+import { getTransactionStatusBadge } from "@/lib/transaction-status";
 
 export const dynamic = "force-dynamic";
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-const formatDate = (iso: string) => {
-  try {
-    return new Date(iso).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  paid: "bg-green-500/10 text-green-400",
-  pending: "bg-yellow-500/10 text-yellow-400",
-  expired: "bg-gray-500/10 text-gray-400",
-  failed: "bg-red-500/10 text-red-400",
-  refunded: "bg-blue-500/10 text-blue-400",
-};
 
 export default async function UserDashboardPage() {
   const [lastOrder, allOrders] = await Promise.all([
@@ -42,10 +15,7 @@ export default async function UserDashboardPage() {
   const totalOrders = allOrders.length;
   const paidOrders = allOrders.filter((o) => o.status === "paid");
   const totalSpent = paidOrders.reduce((sum, o) => sum + o.amount, 0);
-  const totalTickets = paidOrders.reduce(
-    (sum, o) => sum + o.tickets.length,
-    0
-  );
+  const totalTickets = paidOrders.reduce((sum, o) => sum + o.tickets.length, 0);
 
   return (
     <div>
@@ -66,7 +36,7 @@ export default async function UserDashboardPage() {
             <span>Total Pengeluaran</span>
           </div>
           <p className="text-3xl font-bold text-green-400">
-            {formatCurrency(totalSpent)}
+            {formatCurrencyIDR(totalSpent)}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-6">
@@ -93,17 +63,17 @@ export default async function UserDashboardPage() {
                   {lastOrder.quantity} tiket
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  {formatDate(lastOrder.created_at)}
+                  {formatDateIDTimeShort(lastOrder.created_at)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-lg font-bold text-sun6bks-gold">
-                  {formatCurrency(lastOrder.amount)}
+                  {formatCurrencyIDR(lastOrder.amount)}
                 </p>
                 <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-medium ${
-                    STATUS_COLORS[lastOrder.status] ?? STATUS_COLORS.pending
-                  }`}
+                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-medium ${getTransactionStatusBadge(
+                    lastOrder.status,
+                  )}`}
                 >
                   {lastOrder.status.toUpperCase()}
                 </span>
@@ -134,25 +104,14 @@ export default async function UserDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1">
         <Link
           href="/user/orders"
           className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
         >
-          <h3 className="mb-2 text-lg font-bold text-white">
-            Riwayat Pesanan
-          </h3>
+          <h3 className="mb-2 text-lg font-bold text-white">Riwayat Pesanan</h3>
           <p className="text-sm text-gray-400">
             Lihat semua pesanan dan unduh invoice.
-          </p>
-        </Link>
-        <Link
-          href="/user/profile"
-          className="rounded-xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-sun6bks-gold/30 hover:bg-white/10"
-        >
-          <h3 className="mb-2 text-lg font-bold text-white">Profil Saya</h3>
-          <p className="text-sm text-gray-400">
-            Lihat dan kelola informasi profil Anda.
           </p>
         </Link>
       </div>

@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import type { AdminTicket } from "@/actions/admin-tickets";
+import { formatCurrencyIDR, formatDateIDTimeShort } from "@/lib/formatters";
 
 type AdminTicketsClientProps = {
   tickets: AdminTicket[];
@@ -43,27 +44,6 @@ const STATUS_CONFIG: Record<
     bg: "bg-red-400/10",
     label: "Cancelled",
   },
-};
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-const formatDate = (dateStr: string) => {
-  try {
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
 };
 
 const escapeCsvField = (value: string) => {
@@ -112,7 +92,7 @@ export const AdminTicketsClient = ({ tickets }: AdminTicketsClientProps) => {
       escapeCsvField(t.customerName),
       escapeCsvField(t.customerEmail),
       escapeCsvField(t.orderId),
-      escapeCsvField(formatDate(t.createdAt)),
+      escapeCsvField(formatDateIDTimeShort(t.createdAt)),
     ]);
 
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join(
@@ -255,7 +235,7 @@ export const AdminTicketsClient = ({ tickets }: AdminTicketsClientProps) => {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-medium text-white">
-                    {formatCurrency(t.categoryPrice)}
+                    {formatCurrencyIDR(t.categoryPrice)}
                   </td>
                   <td className="px-4 py-3">
                     <div>
@@ -271,7 +251,7 @@ export const AdminTicketsClient = ({ tickets }: AdminTicketsClientProps) => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-400">
-                    {formatDate(t.createdAt)}
+                    {formatDateIDTimeShort(t.createdAt)}
                   </td>
                 </tr>
               );

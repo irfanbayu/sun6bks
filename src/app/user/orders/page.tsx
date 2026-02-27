@@ -2,45 +2,13 @@ import { getUserOrders } from "@/actions/user";
 import Link from "next/link";
 import { FileText, ExternalLink } from "lucide-react";
 import { RecheckButton } from "./client";
+import { formatCurrencyIDR, formatDateIDTimeShort } from "@/lib/formatters";
+import {
+  getTransactionStatusBadge,
+  getTransactionStatusLabel,
+} from "@/lib/transaction-status";
 
 export const dynamic = "force-dynamic";
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-const formatDate = (iso: string) => {
-  try {
-    return new Date(iso).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  paid: "Lunas",
-  pending: "Menunggu",
-  expired: "Kedaluwarsa",
-  failed: "Gagal",
-  refunded: "Dikembalikan",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  paid: "bg-green-500/10 text-green-400",
-  pending: "bg-yellow-500/10 text-yellow-400",
-  expired: "bg-gray-500/10 text-gray-400",
-  failed: "bg-red-500/10 text-red-400",
-  refunded: "bg-blue-500/10 text-blue-400",
-};
 
 export default async function UserOrdersPage() {
   const orders = await getUserOrders();
@@ -75,10 +43,10 @@ export default async function UserOrdersPage() {
                     </h3>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        STATUS_COLORS[order.status] ?? STATUS_COLORS.pending
+                        getTransactionStatusBadge(order.status)
                       }`}
                     >
-                      {STATUS_LABEL[order.status] ?? order.status}
+                      {getTransactionStatusLabel(order.status)}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-gray-400">
@@ -88,7 +56,7 @@ export default async function UserOrdersPage() {
                     Order ID: {order.midtrans_order_id}
                   </p>
                   <p className="mt-0.5 text-xs text-gray-500">
-                    {formatDate(order.created_at)}
+                    {formatDateIDTimeShort(order.created_at)}
                   </p>
 
                   {/* Ticket Codes */}
@@ -109,7 +77,7 @@ export default async function UserOrdersPage() {
                 {/* Price & Actions */}
                 <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-end sm:gap-2">
                   <p className="text-lg font-bold text-sun6bks-gold">
-                    {formatCurrency(order.amount)}
+                    {formatCurrencyIDR(order.amount)}
                   </p>
                   {order.status === "paid" && (
                     <Link

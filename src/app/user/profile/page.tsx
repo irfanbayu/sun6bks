@@ -5,8 +5,7 @@ import { UserProfile } from "@clerk/nextjs";
 export const dynamic = "force-dynamic";
 
 export default async function UserProfilePage() {
-  const user = await currentUser();
-  const profile = await getUserProfile();
+  const [user, profile] = await Promise.all([currentUser(), getUserProfile()]);
 
   if (!user) return null;
 

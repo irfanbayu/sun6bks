@@ -21,10 +21,7 @@ export default async function UserLayout({
     redirect("/admin");
   }
 
-  // Ensure profile exists in Supabase (creates if missing)
-  await ensureUserProfile();
-
-  const user = await currentUser();
+  const [, user] = await Promise.all([ensureUserProfile(), currentUser()]);
   const displayName = user?.fullName ?? user?.firstName ?? "User";
 
   return (
@@ -35,7 +32,6 @@ export default async function UserLayout({
         links={[
           { href: "/user", label: "Dashboard" },
           { href: "/user/orders", label: "Pesanan" },
-          { href: "/user/profile", label: "Profil" },
           { href: "/", label: "Ke Website", muted: true },
         ]}
       />
