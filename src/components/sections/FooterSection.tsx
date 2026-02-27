@@ -16,7 +16,7 @@ import {
 const SOCIAL_LINKS = [
   {
     name: "WhatsApp",
-    href: "https://wa.me/6287880307711",
+    href: "https://wa.me/6287880307711?text=Halo%20Minbek%2C%20Saya%20ingin%20tanya-tanya%20terkait%20eventnya%20dong",
     icon: <MessageCircle className="h-5 w-5" />,
     color: "hover:bg-green-500/20 hover:text-green-400",
   },
@@ -139,7 +139,6 @@ export const FooterSection = () => {
               </li>
             </ul>
           </motion.div>
-
         </div>
 
         {/* Bottom Bar */}
@@ -159,7 +158,7 @@ export const FooterSection = () => {
 
       {/* Fixed WhatsApp Button */}
       <motion.a
-        href="https://wa.me/6287880307711"
+        href="https://wa.me/6287880307711?text=Halo%20Minbek%2C%20Saya%20ingin%20tanya-tanya%20terkait%20eventnya%20dong"
         target="_blank"
         rel="noopener noreferrer"
         initial={{ scale: 0 }}
