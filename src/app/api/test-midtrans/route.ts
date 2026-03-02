@@ -59,10 +59,7 @@ export const GET = async () => {
         status: "success",
         message: "Midtrans Server Key is VALID! Test transaction created.",
         environment: isProduction ? "production" : "sandbox",
-        serverKeyPrefix: `${serverKey.substring(0, 16)}...`,
-        clientKey: clientKey
-          ? `${clientKey.substring(0, 16)}...`
-          : "NOT SET",
+        clientKeyConfigured: Boolean(clientKey),
         snapToken: data.token ? "received" : "missing",
         redirectUrl: data.redirect_url ? "received" : "missing",
       });
@@ -72,12 +69,8 @@ export const GET = async () => {
       status: "error",
       message: `Midtrans API returned HTTP ${response.status}`,
       environment: isProduction ? "production" : "sandbox",
-      serverKeyPrefix: `${serverKey.substring(0, 16)}...`,
-      clientKey: clientKey
-        ? `${clientKey.substring(0, 16)}...`
-        : "NOT SET",
-      authHeader: `Basic ${authString.substring(0, 10)}...`,
-      midtransResponse: data,
+      clientKeyConfigured: Boolean(clientKey),
+      statusCode: response.status,
       hint:
         response.status === 401
           ? "Server Key ditolak oleh Midtrans. Pastikan key benar dan dari environment yang sama (Sandbox/Production). Cek di https://dashboard.sandbox.midtrans.com → Settings → Access Keys"
@@ -89,7 +82,7 @@ export const GET = async () => {
       message:
         error instanceof Error ? error.message : "Unknown fetch error",
       environment: isProduction ? "production" : "sandbox",
-      serverKeyPrefix: `${serverKey.substring(0, 16)}...`,
+      clientKeyConfigured: Boolean(clientKey),
     });
   }
 };

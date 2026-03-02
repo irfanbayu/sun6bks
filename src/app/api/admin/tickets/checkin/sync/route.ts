@@ -8,6 +8,13 @@ type SyncResult = {
   message: string;
 };
 
+const getAuthErrorStatus = (error: unknown): number => {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "Not authenticated") return 401;
+  if (message.includes("Forbidden")) return 403;
+  return 500;
+};
+
 const mapResultStatus = (
   code: "checked_in" | "already_used" | "invalid" | "override_recorded",
 ): SyncResult["status"] => {
@@ -71,10 +78,7 @@ export const POST = async (request: Request) => {
         results.push({
           id: item.id,
           status: "failed_error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Terjadi kesalahan saat sinkronisasi item.",
+          message: "Terjadi kesalahan saat sinkronisasi item.",
         });
       }
     }
@@ -91,19 +95,11 @@ export const POST = async (request: Request) => {
       results,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan server.";
-    const status =
-      message === "Not authenticated"
-        ? 401
-        : message.includes("Forbidden")
-          ? 403
-          : 500;
-
+    const status = getAuthErrorStatus(error);
     return NextResponse.json(
       {
         success: false,
-        message,
+        message: "Terjadi kesalahan server.",
         results: [],
       },
       { status },

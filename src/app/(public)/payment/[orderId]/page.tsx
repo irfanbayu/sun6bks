@@ -19,8 +19,6 @@ type TransactionData = {
   status: "pending" | "paid" | "expired" | "failed" | "refunded";
   amount: number;
   quantity: number;
-  customerName: string;
-  customerEmail: string;
   paidAt: string | null;
   expiredAt: string | null;
   createdAt: string;
@@ -358,8 +356,8 @@ const PaymentConfirmationPage = () => {
             </div>
 
             <p className="mt-4 text-center text-xs text-gray-500">
-              Tunjukkan kode tiket ini saat masuk venue. Invoice telah dikirim
-              ke {transaction.customerEmail}.
+              Tunjukkan kode tiket ini saat masuk venue. Invoice dapat diakses
+              dari halaman akun Anda.
             </p>
           </motion.div>
         )}

@@ -8,6 +8,13 @@ type CheckinRequestBody = {
   deviceId?: string;
 };
 
+const getAuthErrorStatus = (error: unknown): number => {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "Not authenticated") return 401;
+  if (message.includes("Forbidden")) return 403;
+  return 500;
+};
+
 export const POST = async (request: Request) => {
   try {
     const body = (await request.json()) as CheckinRequestBody;
@@ -48,19 +55,11 @@ export const POST = async (request: Request) => {
 
     return NextResponse.json(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan server.";
-    const status =
-      message === "Not authenticated"
-        ? 401
-        : message.includes("Forbidden")
-          ? 403
-          : 500;
-
+    const status = getAuthErrorStatus(error);
     return NextResponse.json(
       {
         success: false,
-        message,
+        message: "Terjadi kesalahan server.",
       },
       { status },
     );

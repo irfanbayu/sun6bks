@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   getCoreApi,
@@ -87,6 +88,7 @@ const syncPendingStatus = async (transaction: {
  * Auto-syncs pending transactions with Midtrans API.
  */
 export const GET = async (_request: Request, { params }: RouteContext) => {
+  const { userId } = await auth();
   const { orderId } = params;
 
   if (!orderId) {
@@ -105,8 +107,7 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
       status,
       amount,
       quantity,
-      customer_name,
-      customer_email,
+      clerk_user_id,
       paid_at,
       expired_at,
       created_at,
@@ -132,8 +133,11 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
     category_id: transaction.category_id,
   });
 
+  const canAccessSensitiveData =
+    Boolean(userId) && transaction.clerk_user_id === userId;
+
   let tickets: { ticket_code: string; status: string }[] = [];
-  if (currentStatus === "paid") {
+  if (currentStatus === "paid" && canAccessSensitiveData) {
     const { data: ticketData } = await supabaseAdmin
       .from("tickets")
       .select("ticket_code, status")
@@ -160,8 +164,6 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
     status: currentStatus,
     amount: transaction.amount,
     quantity: transaction.quantity,
-    customerName: transaction.customer_name,
-    customerEmail: transaction.customer_email,
     paidAt:
       currentStatus === "paid"
         ? (transaction.paid_at ?? new Date().toISOString())

@@ -18,17 +18,20 @@ export const dynamic = "force-dynamic";
 export const GET = async (request: Request) => {
   // Verify CRON_SECRET
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error("[Cron] CRON_SECRET is not configured.");
+    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // Find pending transactions older than 30 minutes
     const thirtyMinutesAgo = new Date(
-      Date.now() - 30 * 60 * 1000
+      Date.now() - 30 * 60 * 1000,
     ).toISOString();
 
     const { data: pendingTransactions, error } = await supabaseAdmin
@@ -59,12 +62,12 @@ export const GET = async (request: Request) => {
     for (const transaction of pendingTransactions) {
       try {
         const midtransStatus = await coreApi.transaction.status(
-          transaction.midtrans_order_id
+          transaction.midtrans_order_id,
         );
 
         const nextStatus = mapMidtransStatus(
           midtransStatus.transaction_status,
-          midtransStatus.fraud_status
+          midtransStatus.fraud_status,
         );
 
         processed++;
@@ -102,7 +105,7 @@ export const GET = async (request: Request) => {
               ticket_code: generateTicketCode(),
               status: "active" as const,
               activated_at: new Date().toISOString(),
-            })
+            }),
           );
 
           await supabaseAdmin.from("tickets").insert(ticketRows);
@@ -111,7 +114,7 @@ export const GET = async (request: Request) => {
         updated++;
 
         console.info(
-          `[Cron] Order ${transaction.midtrans_order_id}: ${transaction.status} -> ${nextStatus}`
+          `[Cron] Order ${transaction.midtrans_order_id}: ${transaction.status} -> ${nextStatus}`,
         );
       } catch (err) {
         const errorMsg = `Order ${transaction.midtrans_order_id}: ${
@@ -132,7 +135,7 @@ export const GET = async (request: Request) => {
     console.error("[Cron] Unhandled error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
