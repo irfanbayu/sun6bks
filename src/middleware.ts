@@ -84,7 +84,7 @@ const getRateLimitConfig = (
   return null;
 };
 
-const shouldRunBotDetection = (request: Request): boolean => {
+const shouldRunBotDetection = (request: NextRequest): boolean => {
   if (isTransactionsRoute(request)) return true;
   if (isInvoiceRoute(request)) return true;
   return false;
