@@ -47,5 +47,7 @@ export type SnapTokenResponse = {
   token?: string;
   redirectUrl?: string;
   orderId?: string;
+  statusAccessSignature?: string;
+  statusAccessExpiresAt?: number;
   error?: string;
 };

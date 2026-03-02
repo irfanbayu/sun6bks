@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   getCoreApi,
   mapMidtransStatus,
   isValidTransition,
 } from "@/lib/midtrans/server";
+import { verifyOrderStatusToken } from "@/lib/security/order-status-token";
 import { generateTicketCode } from "@/lib/tickets";
 
 type RouteContext = {
@@ -86,8 +88,10 @@ const syncPendingStatus = async (transaction: {
  * Polling endpoint for payment confirmation page.
  * Auto-syncs pending transactions with Midtrans API.
  */
-export const GET = async (_request: Request, { params }: RouteContext) => {
+export const GET = async (request: Request, { params }: RouteContext) => {
+  const { userId } = await auth();
   const { orderId } = params;
+  const { searchParams } = new URL(request.url);
 
   if (!orderId) {
     return NextResponse.json(
@@ -105,6 +109,7 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
       status,
       amount,
       quantity,
+      clerk_user_id,
       paid_at,
       expired_at,
       created_at,
@@ -115,6 +120,21 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
     .single();
 
   if (error || !transaction) {
+    return NextResponse.json(
+      { error: "Transaction not found" },
+      { status: 404 },
+    );
+  }
+
+  const isOrderOwner =
+    Boolean(userId) && transaction.clerk_user_id === userId;
+  const hasValidStatusToken = verifyOrderStatusToken({
+    orderId,
+    signature: searchParams.get("sig"),
+    expiresAt: searchParams.get("exp"),
+  });
+
+  if (!isOrderOwner && !hasValidStatusToken) {
     return NextResponse.json(
       { error: "Transaction not found" },
       { status: 404 },

@@ -194,10 +194,29 @@ export const BuyTicketModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSnapResult = (result: MidtransSnapResult, orderId: string) => {
+  const getPaymentStatusUrl = (params: {
+    orderId: string;
+    statusAccessSignature: string;
+    statusAccessExpiresAt: number;
+  }): string => {
+    const query = new URLSearchParams({
+      sig: params.statusAccessSignature,
+      exp: String(params.statusAccessExpiresAt),
+    });
+    return `/payment/${params.orderId}?${query.toString()}`;
+  };
+
+  const handleSnapResult = (
+    _result: MidtransSnapResult,
+    params: {
+      orderId: string;
+      statusAccessSignature: string;
+      statusAccessExpiresAt: number;
+    },
+  ) => {
     // DO NOT activate ticket here.
     // Redirect to payment confirmation page — webhook is single source of truth.
-    router.push(`/payment/${orderId}`);
+    router.push(getPaymentStatusUrl(params));
     onClose();
   };
 
@@ -228,13 +247,21 @@ export const BuyTicketModal = ({
         clerkUserId: user?.id,
       });
 
-      if (!response.success || !response.token || !response.orderId) {
+      if (
+        !response.success ||
+        !response.token ||
+        !response.orderId ||
+        !response.statusAccessSignature ||
+        !response.statusAccessExpiresAt
+      ) {
         setPaymentStatus("error");
         setPaymentMessage(response.error || "Gagal membuat transaksi");
         return;
       }
 
       const orderId = response.orderId;
+      const statusAccessSignature = response.statusAccessSignature;
+      const statusAccessExpiresAt = response.statusAccessExpiresAt;
 
       // Check if Snap is loaded
       if (!window.snap) {
@@ -252,13 +279,34 @@ export const BuyTicketModal = ({
 
       // Trigger Midtrans Snap popup
       window.snap.pay(response.token, {
-        onSuccess: (result) => handleSnapResult(result, orderId),
-        onPending: (result) => handleSnapResult(result, orderId),
-        onError: (result) => handleSnapResult(result, orderId),
+        onSuccess: (result) =>
+          handleSnapResult(result, {
+            orderId,
+            statusAccessSignature,
+            statusAccessExpiresAt,
+          }),
+        onPending: (result) =>
+          handleSnapResult(result, {
+            orderId,
+            statusAccessSignature,
+            statusAccessExpiresAt,
+          }),
+        onError: (result) =>
+          handleSnapResult(result, {
+            orderId,
+            statusAccessSignature,
+            statusAccessExpiresAt,
+          }),
         onClose: () => {
           // User closed popup — still redirect to payment page
           // so they can see status (webhook may still come)
-          router.push(`/payment/${orderId}`);
+          router.push(
+            getPaymentStatusUrl({
+              orderId,
+              statusAccessSignature,
+              statusAccessExpiresAt,
+            }),
+          );
           onClose();
         },
       });

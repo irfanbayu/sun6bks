@@ -9,6 +9,7 @@ import {
   generateOrderId,
   formatJakartaTime,
 } from "@/lib/midtrans/server";
+import { createOrderStatusToken } from "@/lib/security/order-status-token";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 /**
@@ -70,6 +71,9 @@ export const createOrderAndSnapToken = async (
     // 3. Generate order ID & calculate amount
     const orderId = generateOrderId(params.eventId);
     const grossAmount = params.quantity * categoryResult.data.price;
+    const statusToken = createOrderStatusToken(orderId);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const paymentFinishUrl = `${appUrl}/payment/${orderId}?exp=${statusToken.expiresAt}&sig=${encodeURIComponent(statusToken.signature)}`;
 
     // 4. Create Midtrans Snap transaction (native fetch, proper Base64 auth)
     const transactionParams = {
@@ -95,7 +99,7 @@ export const createOrderAndSnapToken = async (
         phone: params.customerPhone,
       },
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/payment/${orderId}`,
+        finish: paymentFinishUrl,
       },
       expiry: {
         start_time: formatJakartaTime(),
@@ -134,6 +138,8 @@ export const createOrderAndSnapToken = async (
       token: midtransResult.token,
       redirectUrl: midtransResult.redirect_url,
       orderId,
+      statusAccessSignature: statusToken.signature,
+      statusAccessExpiresAt: statusToken.expiresAt,
     };
   } catch (error: unknown) {
     console.error("[createOrderAndSnapToken] Error:", error);

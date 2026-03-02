@@ -150,6 +150,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_APP_URL`                | URL aplikasi (e.g. `http://localhost:3000`) |
 | `SINGLE_EVENT_SLUG`                  | Slug event untuk landing page (opsional)    |
 | `CRON_SECRET`                        | Secret untuk proteksi cron job              |
+| `ORDER_STATUS_TOKEN_SECRET`          | Secret HMAC untuk signed status token       |
 
 ### 4. Setup Database
 
@@ -214,7 +215,7 @@ Admin panel tersedia di `/admin` dan dilindungi oleh Clerk authentication.
 | Method | Path                            | Auth       | Deskripsi                             |
 | ------ | ------------------------------- | ---------- | ------------------------------------- |
 | POST   | `/midtrans/callback`            | Signature  | Webhook notifikasi Midtrans           |
-| GET    | `/api/transactions/:orderId`    | Public     | Polling status transaksi              |
+| GET    | `/api/transactions/:orderId`    | Signed URL / Owner | Polling status transaksi      |
 | GET    | `/api/cron/reconcile`           | CRON_SECRET| Rekonsiliasi transaksi pending        |
 
 ---

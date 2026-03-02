@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   CheckCircle,
@@ -48,8 +48,11 @@ const MAX_POLLS = 60; // max 60 polls (~3 minutes total)
 
 const PaymentConfirmationPage = () => {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = params.orderId as string;
+  const statusSignature = searchParams.get("sig");
+  const statusExpiry = searchParams.get("exp");
 
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +64,14 @@ const PaymentConfirmationPage = () => {
   const fetchPublicTransaction = useCallback(
     async (): Promise<PublicTransactionData | null> => {
       try {
-        const response = await fetch(`/api/transactions/${orderId}`);
+        const query = new URLSearchParams();
+        if (statusSignature) query.set("sig", statusSignature);
+        if (statusExpiry) query.set("exp", statusExpiry);
+        const response = await fetch(
+          `/api/transactions/${orderId}?${query.toString()}`,
+        );
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === 403 || response.status === 404) {
             setError("Transaksi tidak ditemukan.");
             return null;
           }
@@ -77,7 +85,7 @@ const PaymentConfirmationPage = () => {
         return null;
       }
     },
-    [orderId],
+    [orderId, statusExpiry, statusSignature],
   );
 
   const fetchPrivateTransaction = useCallback(
