@@ -177,6 +177,79 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 | `build`         | `npm run build`  | Build untuk production           |
 | `start`         | `npm run start`  | Jalankan production server       |
 | `lint`          | `npm run lint`   | Jalankan ESLint                  |
+| `test`          | `npm run test`   | Jalankan unit + integration + e2e internal |
+| `test:unit`     | `npm run test:unit` | Unit test domain payment utils |
+| `test:integration` | `npm run test:integration` | Integration test route payment/public API |
+| `test:e2e`      | `npm run test:e2e` | E2E internal flow (module-level) |
+| `test:coverage` | `npm run test:coverage` | Coverage gate untuk unit + integration |
+| `test:smoke:sandbox` | `npm run test:smoke:sandbox` | Smoke optional ke Midtrans sandbox |
+
+---
+
+## Testing Runbook (Payment & Public API)
+
+### Cakupan wajib
+
+- `Success`: create order -> callback/polling -> status `paid` -> tiket aktif -> invoice tersedia
+- `Failure`: invalid signature, transaction not found, unauthorized access, expired/failed status
+- `Retry`: pending disinkronkan via polling dan cron reconcile
+- `Callback handling`: idempotency, transition guard, optimistic locking, response aman untuk mencegah retry storm
+
+### Struktur test
+
+- `tests/unit/*` untuk helper payment (`mapMidtransStatus`, `isValidTransition`, `verifySignature`, `formatJakartaTime`)
+- `tests/integration/*` untuk route handler:
+  - `/midtrans/callback`
+  - `/api/transactions/[orderId]`
+  - `/api/cron/reconcile`
+  - `/api/user/orders/[orderId]/detail`
+  - `/api/user/orders/[orderId]/invoice`
+- `tests/e2e/*` untuk lifecycle internal end-to-end lintas modul
+- `tests/smoke/*` untuk smoke opsional ke environment sandbox
+
+### Menjalankan test
+
+```bash
+npm run test
+```
+
+### Menjalankan smoke sandbox (opsional)
+
+```bash
+MIDTRANS_SMOKE_BASE_URL=https://your-domain.vercel.app npm run test:smoke:sandbox
+```
+
+### Coverage gate
+
+Vitest coverage threshold minimum (dijalankan via `npm run test:coverage`):
+
+- Lines: `70%`
+- Functions: `70%`
+- Statements: `70%`
+- Branches: `60%`
+
+Jika coverage di bawah threshold, pipeline test akan gagal.
+
+---
+
+## CI Pipeline (GitHub Actions)
+
+Workflow yang tersedia:
+
+- `CI Tests` (`.github/workflows/ci-tests.yml`)
+  - Trigger: `push` ke `main/master`, `pull_request`, dan manual (`workflow_dispatch`)
+  - Menjalankan:
+    - `npm run test`
+    - `npm run test:coverage`
+- `Nightly Smoke` (`.github/workflows/nightly-smoke.yml`)
+  - Trigger: nightly (`cron: 00:00 UTC`) dan manual
+  - Menjalankan:
+    - `npm run test:smoke:sandbox`
+
+### Secret wajib untuk nightly smoke
+
+- `MIDTRANS_SMOKE_BASE_URL`  
+  Base URL environment yang expose endpoint smoke (`/api/test-midtrans`), contoh: `https://your-domain.vercel.app`
 
 ---
 

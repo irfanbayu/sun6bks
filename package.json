@@ -7,7 +7,13 @@
     "dev:tunnel": "npx ngrok http 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e",
+    "test:coverage": "vitest run tests/unit tests/integration --coverage",
+    "test:smoke:sandbox": "playwright test tests/smoke/sandbox-midtrans.spec.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
@@ -35,14 +41,21 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.15",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.28",
+    "jsdom": "^27.0.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
   }
 }
