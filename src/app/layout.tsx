@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SessionMaxAgeGuard } from "@/components/providers/SessionMaxAgeGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({
   const content = (
     <html lang="id">
       <body className={`${inter.variable} font-sans antialiased`}>
+        {hasClerkKey ? <SessionMaxAgeGuard /> : null}
         {children}
       </body>
     </html>
