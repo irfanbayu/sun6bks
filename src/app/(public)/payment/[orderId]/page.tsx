@@ -14,14 +14,19 @@ import {
   Check,
 } from "lucide-react";
 
-type TransactionData = {
+type TransactionStatus = "pending" | "paid" | "expired" | "failed" | "refunded";
+
+type PublicTransactionData = {
   orderId: string;
-  status: "pending" | "paid" | "expired" | "failed" | "refunded";
+  status: TransactionStatus;
   amount: number;
   quantity: number;
   paidAt: string | null;
   expiredAt: string | null;
   createdAt: string;
+};
+
+type PrivateTransactionData = {
   event: {
     title: string;
     venue: string;
@@ -32,8 +37,11 @@ type TransactionData = {
     name: string;
     price: number;
   } | null;
+  customerEmail: string | null;
   tickets: { ticket_code: string; status: string }[];
 };
+
+type TransactionData = PublicTransactionData & PrivateTransactionData;
 
 const POLL_INTERVALS = [1000, 2000, 4000, 8000, 10000]; // exponential backoff
 const MAX_POLLS = 60; // max 60 polls (~3 minutes total)
@@ -50,38 +58,82 @@ const PaymentConfirmationPage = () => {
   const pollCountRef = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchTransaction = useCallback(async (): Promise<TransactionData | null> => {
-    try {
-      const response = await fetch(`/api/transactions/${orderId}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError("Transaksi tidak ditemukan.");
+  const fetchPublicTransaction = useCallback(
+    async (): Promise<PublicTransactionData | null> => {
+      try {
+        const response = await fetch(`/api/transactions/${orderId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("Transaksi tidak ditemukan.");
+            return null;
+          }
+          throw new Error("Gagal memuat data transaksi.");
+        }
+        const data = (await response.json()) as PublicTransactionData;
+        return data;
+      } catch (err) {
+        console.error("[PaymentPage] Public fetch error:", err);
+        setError("Gagal memuat data transaksi. Coba refresh halaman.");
+        return null;
+      }
+    },
+    [orderId],
+  );
+
+  const fetchPrivateTransaction = useCallback(
+    async (): Promise<PrivateTransactionData | null> => {
+      try {
+        const response = await fetch(`/api/user/orders/${orderId}/detail`);
+        if (response.status === 401 || response.status === 404) {
           return null;
         }
-        throw new Error("Gagal memuat data transaksi.");
+        if (!response.ok) {
+          throw new Error("Gagal memuat detail transaksi.");
+        }
+        const data = (await response.json()) as PrivateTransactionData;
+        return data;
+      } catch (err) {
+        console.error("[PaymentPage] Private fetch error:", err);
+        return null;
       }
-      const data = (await response.json()) as TransactionData;
-      return data;
-    } catch (err) {
-      console.error("[PaymentPage] Fetch error:", err);
-      setError("Gagal memuat data transaksi. Coba refresh halaman.");
-      return null;
-    }
-  }, [orderId]);
+    },
+    [orderId],
+  );
 
   const startPolling = useCallback(async () => {
-    const data = await fetchTransaction();
-    if (!data) {
+    const publicData = await fetchPublicTransaction();
+    if (!publicData) {
       setIsLoading(false);
       return;
     }
 
-    setTransaction(data);
+    const baseTransaction: TransactionData = {
+      ...publicData,
+      customerEmail: null,
+      event: null,
+      category: null,
+      tickets: [],
+    };
+
+    if (publicData.status === "paid") {
+      const privateData = await fetchPrivateTransaction();
+      if (privateData) {
+        setTransaction({
+          ...baseTransaction,
+          ...privateData,
+        });
+      } else {
+        setTransaction(baseTransaction);
+      }
+    } else {
+      setTransaction(baseTransaction);
+    }
+
     setIsLoading(false);
 
     // Stop polling if status is final
     const isFinal = ["paid", "expired", "failed", "refunded"].includes(
-      data.status
+      publicData.status,
     );
     if (isFinal || pollCountRef.current >= MAX_POLLS) {
       return;
@@ -90,13 +142,13 @@ const PaymentConfirmationPage = () => {
     // Schedule next poll with backoff
     const intervalIndex = Math.min(
       pollCountRef.current,
-      POLL_INTERVALS.length - 1
+      POLL_INTERVALS.length - 1,
     );
     const delay = POLL_INTERVALS[intervalIndex];
     pollCountRef.current += 1;
 
     timeoutRef.current = setTimeout(startPolling, delay);
-  }, [fetchTransaction]);
+  }, [fetchPrivateTransaction, fetchPublicTransaction]);
 
   useEffect(() => {
     if (!orderId) return;
@@ -356,8 +408,10 @@ const PaymentConfirmationPage = () => {
             </div>
 
             <p className="mt-4 text-center text-xs text-gray-500">
-              Tunjukkan kode tiket ini saat masuk venue. Invoice dapat diakses
-              dari halaman akun Anda.
+              Tunjukkan kode tiket ini saat masuk venue.
+              {transaction.customerEmail
+                ? ` Invoice telah dikirim ke ${transaction.customerEmail}.`
+                : " Invoice dapat diakses dari halaman akun Anda."}
             </p>
           </motion.div>
         )}

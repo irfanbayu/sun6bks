@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import {
   getCoreApi,
@@ -88,7 +87,6 @@ const syncPendingStatus = async (transaction: {
  * Auto-syncs pending transactions with Midtrans API.
  */
 export const GET = async (_request: Request, { params }: RouteContext) => {
-  const { userId } = await auth();
   const { orderId } = params;
 
   if (!orderId) {
@@ -107,11 +105,9 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
       status,
       amount,
       quantity,
-      clerk_user_id,
       paid_at,
       expired_at,
       created_at,
-      event_id,
       category_id
     `,
     )
@@ -133,32 +129,6 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
     category_id: transaction.category_id,
   });
 
-  const canAccessSensitiveData =
-    Boolean(userId) && transaction.clerk_user_id === userId;
-
-  let tickets: { ticket_code: string; status: string }[] = [];
-  if (currentStatus === "paid" && canAccessSensitiveData) {
-    const { data: ticketData } = await supabaseAdmin
-      .from("tickets")
-      .select("ticket_code, status")
-      .eq("transaction_id", transaction.id);
-
-    tickets = ticketData || [];
-  }
-
-  const [eventResult, categoryResult] = await Promise.all([
-    supabaseAdmin
-      .from("events")
-      .select("title, venue, date, time_label")
-      .eq("id", transaction.event_id)
-      .single(),
-    supabaseAdmin
-      .from("ticket_categories")
-      .select("name, price")
-      .eq("id", transaction.category_id)
-      .single(),
-  ]);
-
   return NextResponse.json({
     orderId: transaction.midtrans_order_id,
     status: currentStatus,
@@ -170,20 +140,5 @@ export const GET = async (_request: Request, { params }: RouteContext) => {
         : transaction.paid_at,
     expiredAt: transaction.expired_at,
     createdAt: transaction.created_at,
-    event: eventResult.data
-      ? {
-          title: eventResult.data.title,
-          venue: eventResult.data.venue,
-          date: eventResult.data.date,
-          timeLabel: eventResult.data.time_label,
-        }
-      : null,
-    category: categoryResult.data
-      ? {
-          name: categoryResult.data.name,
-          price: categoryResult.data.price,
-        }
-      : null,
-    tickets,
   });
 };
