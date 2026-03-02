@@ -1,6 +1,6 @@
 # Standupindo Bekasi Events
 
-Platform tiket event untuk komunitas Stand-up Comedy Bekasi. Dibangun dengan **Next.js 14**, **Supabase**, **Midtrans**, dan **Clerk**.
+Platform penjualan tiket event untuk komunitas Stand-up Comedy Bekasi. Aplikasi ini dibangun dengan **Next.js App Router**, **Supabase**, **Midtrans**, dan **Clerk**, dengan alur payment yang aman, idempotent, dan siap diuji otomatis.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)
@@ -10,289 +10,242 @@ Platform tiket event untuk komunitas Stand-up Comedy Bekasi. Dibangun dengan **N
 
 ---
 
-## Fitur
+## Fitur Utama
 
-- **Landing Page** — Halaman single-event dengan section Hero, Events, Performers, Venues, Pricing, dan Footer
-- **Pembelian Tiket** — Modal checkout terintegrasi Midtrans Snap untuk pembayaran (QRIS, Bank Transfer, E-Wallet, dll.)
-- **Multi Kategori Tiket** — Dukungan Early Bird, Presale, Regular, VIP, dll. dengan stok independen
-- **Payment Webhook** — Midtrans webhook sebagai Single Source of Truth untuk status pembayaran
-- **Halaman Konfirmasi** — Status pembayaran real-time dengan polling otomatis
-- **Admin Dashboard** — Dashboard statistik (revenue, transaksi, tiket aktif) dilindungi Clerk Auth
-- **Manajemen Transaksi** — Admin bisa re-check status Midtrans dan manual override
-- **Cron Reconciliation** — Job otomatis setiap jam untuk rekonsiliasi transaksi pending > 30 menit
-- **Smooth Scroll** — Animasi scroll halus dengan Lenis
-- **Framer Motion** — Animasi UI yang interaktif dan modern
+- Landing page event publik dengan section komprehensif (hero, performer, venue, pricing)
+- Checkout tiket terintegrasi Midtrans Snap
+- Multi kategori tiket dengan stok independen
+- Webhook Midtrans sebagai source of truth status transaksi
+- Halaman konfirmasi pembayaran dengan polling otomatis
+- Endpoint fallback sync status transaksi (jika callback telat/gagal)
+- Cron reconciliation transaksi pending
+- Admin panel untuk monitoring dan manajemen transaksi
 
 ---
 
 ## Tech Stack
 
-| Layer        | Teknologi                                      |
-| ------------ | ---------------------------------------------- |
-| Framework    | [Next.js 14](https://nextjs.org/) (App Router) |
-| Language     | [TypeScript 5.7](https://typescriptlang.org/)  |
-| Styling      | [Tailwind CSS 3.4](https://tailwindcss.com/)   |
-| Database     | [Supabase](https://supabase.com/) (PostgreSQL) |
-| Payment      | [Midtrans](https://midtrans.com/) Snap         |
-| Auth (Admin) | [Clerk](https://clerk.com/)                    |
-| Animation    | [Framer Motion](https://motion.dev/)           |
-| Smooth Scroll| [Lenis](https://lenis.darkroom.engineering/)   |
-| Deployment   | [Vercel](https://vercel.com/)                  |
+| Layer | Teknologi |
+| --- | --- |
+| Framework | [Next.js 14](https://nextjs.org/) (App Router) |
+| Language | [TypeScript](https://typescriptlang.org/) |
+| Styling | [Tailwind CSS](https://tailwindcss.com/) |
+| Database | [Supabase](https://supabase.com/) (PostgreSQL) |
+| Payment | [Midtrans Snap](https://midtrans.com/) |
+| Auth | [Clerk](https://clerk.com/) |
+| Animation | [Framer Motion](https://motion.dev/) |
+| Deployment | [Vercel](https://vercel.com/) |
 
 ---
 
 ## Struktur Project
 
-```
+```text
 sun6bks/
 ├── src/
-│   ├── actions/            # Server Actions (events, midtrans, admin)
+│   ├── actions/
 │   ├── app/
-│   │   ├── (public)/       # Landing page (server + client component)
-│   │   │   └── payment/    # Halaman konfirmasi pembayaran
-│   │   ├── admin/          # Admin dashboard & transaksi (protected)
+│   │   ├── (public)/
+│   │   ├── admin/
 │   │   ├── api/
-│   │   │   ├── cron/       # Vercel cron job (reconcile)
-│   │   │   └── transactions/ # Public polling endpoint
-│   │   └── midtrans/       # Midtrans webhook callback
+│   │   └── midtrans/
 │   ├── components/
-│   │   ├── layout/         # Navbar
-│   │   ├── providers/      # SmoothScroll, Midtrans providers
-│   │   ├── sections/       # Hero, Events, Performers, Venues, Pricing, Footer
-│   │   └── ui/             # BuyTicketModal, dll.
 │   ├── lib/
-│   │   ├── midtrans/       # Midtrans server utilities
-│   │   └── supabase/       # Supabase client & types
-│   ├── styles/             # Global CSS (Tailwind)
-│   └── types/              # TypeScript type definitions
+│   └── types/
 ├── supabase/
-│   └── migrations/         # SQL migrations (schema & RPC)
-├── vercel.json             # Vercel cron config
-└── package.json
+│   └── migrations/
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   ├── e2e/
+│   ├── smoke/
+│   ├── mocks/
+│   └── setup/
+└── .github/workflows/
 ```
 
 ---
 
-## Database Schema
+## Database Ringkas
 
-Menggunakan Supabase (PostgreSQL) dengan tabel-tabel berikut:
+Tabel utama:
 
-| Tabel               | Deskripsi                                         |
-| ------------------- | ------------------------------------------------- |
-| `events`            | Data event (judul, tanggal, venue, performers)     |
-| `ticket_categories` | Kategori tiket per event (nama, harga, fitur)      |
-| `ticket_stocks`     | Stok tiket per kategori (total & remaining)        |
-| `transactions`      | Transaksi pembayaran (integrasi Midtrans)          |
-| `tickets`           | Tiket aktif (dibuat setelah pembayaran sukses)     |
-| `audit_logs`        | Log audit untuk admin manual override              |
-| `webhook_payloads`  | Raw payload webhook Midtrans untuk debugging       |
+- `events`
+- `ticket_categories`
+- `ticket_stocks`
+- `transactions`
+- `tickets`
+- `webhook_payloads`
+- `audit_logs`
 
-Row Level Security (RLS) aktif di semua tabel. Data publik (events, kategori, stok) bisa dibaca tanpa autentikasi. Operasi server menggunakan `service_role` key.
+Migrasi penting:
 
----
-
-## Alur Pembayaran
-
-```
-1. User pilih kategori tiket → Isi form (nama, email, telepon)
-2. Server Action buat transaksi + request Snap Token ke Midtrans
-3. User bayar via Midtrans Snap (QRIS, Bank Transfer, E-Wallet, dll.)
-4. Midtrans kirim webhook ke POST /midtrans/callback
-5. Webhook verifikasi signature → update status transaksi
-6. Jika paid: decrement stok + generate tiket (ticket_code)
-7. User redirect ke halaman konfirmasi → polling status via API
-8. Cron job /api/cron/reconcile berjalan setiap jam sebagai safety net
-```
+- `supabase/migrations/001_initial_schema.sql`
+- `supabase/migrations/002_decrement_stock_rpc.sql`
 
 ---
 
-## Memulai
+## Alur Pembayaran (Lifecycle)
+
+```text
+1) User checkout tiket
+2) Server action membuat order + snap token (status awal: pending)
+3) User bayar via Midtrans
+4) Midtrans callback ke /midtrans/callback
+5) Signature diverifikasi + status dimapping + transition divalidasi
+6) Jika paid: decrement stock + generate tickets + trigger invoice
+7) User melihat status di /payment/[orderId] via polling /api/transactions/[orderId]
+8) Jika callback miss/telat: fallback sync dan /api/cron/reconcile menangani retry
+```
+
+---
+
+## Quick Start
 
 ### Prasyarat
 
-- [Node.js](https://nodejs.org/) >= 18
-- [npm](https://www.npmjs.com/) atau [pnpm](https://pnpm.io/)
-- Akun [Supabase](https://supabase.com/) (project + database)
-- Akun [Midtrans](https://midtrans.com/) (sandbox untuk development)
-- Akun [Clerk](https://clerk.com/) (untuk admin auth)
+- Node.js 20+
+- npm
+- Project Supabase
+- Akun Midtrans (sandbox untuk dev)
+- Akun Clerk
 
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/your-username/sun6bks.git
-cd sun6bks
-```
-
-### 2. Install Dependencies
+### 1) Install dependency
 
 ```bash
 npm install
 ```
 
-### 3. Setup Environment Variables
+### 2) Siapkan environment
 
-Salin `.env.example` ke `.env.local` dan isi semua nilai:
+Salin `.env.example` ke `.env.local`, lalu isi:
 
-```bash
-cp .env.example .env.local
-```
+| Variable | Deskripsi |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server only) |
+| `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` | Midtrans client key |
+| `MIDTRANS_SERVER_KEY` | Midtrans server key |
+| `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION` | `false` untuk sandbox |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
+| `NEXT_PUBLIC_APP_URL` | Base URL aplikasi |
+| `CRON_SECRET` | Secret proteksi route cron |
+| `ORDER_STATUS_TOKEN_SECRET` | Secret signing token status order |
 
-| Variable                             | Deskripsi                                   |
-| ------------------------------------ | ------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`           | URL project Supabase                        |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`      | Anon/public key Supabase                    |
-| `SUPABASE_SERVICE_ROLE_KEY`          | Service role key Supabase (server-only)     |
-| `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`    | Client key Midtrans                         |
-| `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION` | `false` untuk sandbox, `true` untuk produksi|
-| `MIDTRANS_SERVER_KEY`                | Server key Midtrans (server-only)           |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`  | Publishable key Clerk                       |
-| `CLERK_SECRET_KEY`                   | Secret key Clerk (server-only)              |
-| `NEXT_PUBLIC_APP_URL`                | URL aplikasi (e.g. `http://localhost:3000`) |
-| `SINGLE_EVENT_SLUG`                  | Slug event untuk landing page (opsional)    |
-| `CRON_SECRET`                        | Secret untuk proteksi cron job              |
-| `ORDER_STATUS_TOKEN_SECRET`          | Secret HMAC untuk signed status token       |
+### 3) Jalankan migrasi database
 
-### 4. Setup Database
+Jalankan SQL migration di Supabase SQL editor:
 
-Jalankan migration SQL di Supabase SQL Editor secara berurutan:
+1. `001_initial_schema.sql`
+2. `002_decrement_stock_rpc.sql`
 
-1. `supabase/migrations/001_initial_schema.sql` — Buat tabel, index, RLS
-2. `supabase/migrations/002_decrement_stock_rpc.sql` — RPC untuk atomic stock decrement
-
-### 5. Jalankan Development Server
+### 4) Jalankan aplikasi
 
 ```bash
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000) di browser.
-
 ---
 
 ## Scripts
 
-| Script          | Perintah         | Deskripsi                        |
-| --------------- | ---------------- | -------------------------------- |
-| `dev`           | `npm run dev`    | Jalankan development server      |
-| `build`         | `npm run build`  | Build untuk production           |
-| `start`         | `npm run start`  | Jalankan production server       |
-| `lint`          | `npm run lint`   | Jalankan ESLint                  |
-| `test`          | `npm run test`   | Jalankan unit + integration + e2e internal |
-| `test:unit`     | `npm run test:unit` | Unit test domain payment utils |
-| `test:integration` | `npm run test:integration` | Integration test route payment/public API |
-| `test:e2e`      | `npm run test:e2e` | E2E internal flow (module-level) |
-| `test:coverage` | `npm run test:coverage` | Coverage gate untuk unit + integration |
-| `test:smoke:sandbox` | `npm run test:smoke:sandbox` | Smoke optional ke Midtrans sandbox |
+| Script | Fungsi |
+| --- | --- |
+| `npm run dev` | Jalankan server development |
+| `npm run build` | Build production |
+| `npm run start` | Start production build |
+| `npm run lint` | Jalankan ESLint |
+| `npm run test` | Unit + integration + e2e internal |
+| `npm run test:unit` | Unit test helper payment |
+| `npm run test:integration` | Integration test route payment/public API |
+| `npm run test:e2e` | E2E internal flow payment |
+| `npm run test:coverage` | Coverage gate (unit + integration) |
+| `npm run test:smoke:sandbox` | Smoke test Midtrans sandbox (opsional) |
 
 ---
 
-## Testing Runbook (Payment & Public API)
+## Testing Strategy
 
 ### Cakupan wajib
 
-- `Success`: create order -> callback/polling -> status `paid` -> tiket aktif -> invoice tersedia
-- `Failure`: invalid signature, transaction not found, unauthorized access, expired/failed status
-- `Retry`: pending disinkronkan via polling dan cron reconcile
-- `Callback handling`: idempotency, transition guard, optimistic locking, response aman untuk mencegah retry storm
+- **Success flow**: create order -> callback/polling -> paid -> ticket aktif -> invoice tersedia
+- **Failure flow**: invalid signature, transaction not found, expired/failed, unauthorized access
+- **Retry flow**: fallback sync via polling + cron reconcile
+- **Callback handling**: transition guard, idempotency, optimistic locking
 
 ### Struktur test
 
-- `tests/unit/*` untuk helper payment (`mapMidtransStatus`, `isValidTransition`, `verifySignature`, `formatJakartaTime`)
-- `tests/integration/*` untuk route handler:
+- `tests/unit` untuk helper payment (`mapMidtransStatus`, `isValidTransition`, `verifySignature`, `formatJakartaTime`)
+- `tests/integration` untuk route:
   - `/midtrans/callback`
   - `/api/transactions/[orderId]`
   - `/api/cron/reconcile`
   - `/api/user/orders/[orderId]/detail`
   - `/api/user/orders/[orderId]/invoice`
-- `tests/e2e/*` untuk lifecycle internal end-to-end lintas modul
-- `tests/smoke/*` untuk smoke opsional ke environment sandbox
+- `tests/e2e` untuk lifecycle internal end-to-end lintas modul
+- `tests/smoke` untuk smoke test environment eksternal/sandbox
 
-### Menjalankan test
-
-```bash
-npm run test
-```
-
-### Menjalankan smoke sandbox (opsional)
-
-```bash
-MIDTRANS_SMOKE_BASE_URL=https://your-domain.vercel.app npm run test:smoke:sandbox
-```
-
-### Coverage gate
-
-Vitest coverage threshold minimum (dijalankan via `npm run test:coverage`):
+### Coverage threshold
 
 - Lines: `70%`
 - Functions: `70%`
 - Statements: `70%`
 - Branches: `60%`
 
-Jika coverage di bawah threshold, pipeline test akan gagal.
+Jika threshold tidak terpenuhi, `test:coverage` akan gagal.
 
 ---
 
-## CI Pipeline (GitHub Actions)
+## CI/CD (GitHub Actions)
 
 Workflow yang tersedia:
 
 - `CI Tests` (`.github/workflows/ci-tests.yml`)
-  - Trigger: `push` ke `main/master`, `pull_request`, dan manual (`workflow_dispatch`)
+  - Trigger: push `main/master`, pull request, manual dispatch
   - Menjalankan:
     - `npm run test`
     - `npm run test:coverage`
+
 - `Nightly Smoke` (`.github/workflows/nightly-smoke.yml`)
-  - Trigger: nightly (`cron: 00:00 UTC`) dan manual
+  - Trigger: nightly (`0 0 * * *`, UTC) + manual dispatch
   - Menjalankan:
     - `npm run test:smoke:sandbox`
 
-### Secret wajib untuk nightly smoke
+Secret wajib untuk nightly smoke:
 
 - `MIDTRANS_SMOKE_BASE_URL`  
-  Base URL environment yang expose endpoint smoke (`/api/test-midtrans`), contoh: `https://your-domain.vercel.app`
+  Contoh: `https://your-domain.vercel.app`
 
 ---
 
 ## Deployment (Vercel)
 
-1. Push ke repository GitHub
-2. Import project di [Vercel](https://vercel.com/)
-3. Tambahkan semua environment variables dari `.env.example`
-4. Set `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION=true` dan gunakan production keys Midtrans
-5. Pastikan `NEXT_PUBLIC_APP_URL` sesuai domain Vercel
-6. Cron job (`/api/cron/reconcile`) sudah dikonfigurasi di `vercel.json` berjalan setiap jam
+1. Push repository ke GitHub
+2. Import project ke Vercel
+3. Tambahkan semua env vars
+4. Pastikan `NEXT_PUBLIC_APP_URL` sesuai domain deploy
+5. Set Midtrans Notification URL:
 
-### Midtrans Webhook URL
-
-Set Notification URL di Midtrans Dashboard:
-
-```
+```text
 https://your-domain.vercel.app/midtrans/callback
 ```
 
 ---
 
-## Admin Panel
+## API Endpoints Penting
 
-Admin panel tersedia di `/admin` dan dilindungi oleh Clerk authentication.
-
-- **Dashboard** — Statistik revenue, total transaksi, events, dan tiket aktif
-- **Transaksi** — Daftar transaksi, re-check status Midtrans, manual override
-
-> Akses admin dibatasi berdasarkan email yang terdaftar di konfigurasi.
-
----
-
-## API Endpoints
-
-| Method | Path                            | Auth       | Deskripsi                             |
-| ------ | ------------------------------- | ---------- | ------------------------------------- |
-| POST   | `/midtrans/callback`            | Signature  | Webhook notifikasi Midtrans           |
-| GET    | `/api/transactions/:orderId`    | Signed URL / Owner | Polling status transaksi      |
-| GET    | `/api/cron/reconcile`           | CRON_SECRET| Rekonsiliasi transaksi pending        |
+| Method | Path | Fungsi |
+| --- | --- | --- |
+| `POST` | `/midtrans/callback` | Terima callback Midtrans |
+| `GET` | `/api/transactions/:orderId` | Polling status transaksi |
+| `GET` | `/api/user/orders/:orderId/detail` | Detail order user |
+| `GET` | `/api/user/orders/:orderId/invoice` | Invoice order paid |
+| `GET` | `/api/cron/reconcile` | Reconcile transaksi pending |
 
 ---
 
-## License
+## Lisensi
 
-Private project — All rights reserved.
+Private project - all rights reserved.
