@@ -96,6 +96,19 @@ const toDatetimeLocal = (iso: string): string => {
   }
 };
 
+const toIsoForStorage = (datetimeLocal: string): string => {
+  if (!datetimeLocal) {
+    return "";
+  }
+
+  const parsedDate = new Date(datetimeLocal);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return parsedDate.toISOString();
+};
+
 const generateSlug = (title: string): string =>
   title
     .toLowerCase()
@@ -403,13 +416,27 @@ export const AdminEventsClient = ({ events }: AdminEventsClientProps) => {
       }
     }
 
+    const normalizedEventDate = toIsoForStorage(form.date);
+    if (!normalizedEventDate) {
+      setMessage({
+        text: "Format tanggal tidak valid.",
+        success: false,
+      });
+      return;
+    }
+
+    const payload: EventInput = {
+      ...form,
+      date: normalizedEventDate,
+    };
+
     const actionKey = editingEventId ? "update" : "create";
     setLoading(actionKey);
     setMessage(null);
 
     const result = editingEventId
-      ? await updateEvent(editingEventId, form)
-      : await createEvent(form);
+      ? await updateEvent(editingEventId, payload)
+      : await createEvent(payload);
 
     setLoading(null);
     setMessage({ text: result.message, success: result.success });

@@ -17,6 +17,7 @@ const formatDate = (isoDate: string): string => {
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "Asia/Jakarta",
     });
   } catch {
     return isoDate;
