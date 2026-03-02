@@ -77,12 +77,15 @@ export const GET = async () => {
           : undefined,
     });
   } catch (error) {
-    return NextResponse.json({
-      status: "error",
-      message:
-        error instanceof Error ? error.message : "Unknown fetch error",
-      environment: isProduction ? "production" : "sandbox",
-      clientKeyConfigured: Boolean(clientKey),
-    });
+    console.error("[test-midtrans] Unhandled error:", error);
+    return NextResponse.json(
+      {
+        status: "error",
+        message: "Internal server error",
+        environment: isProduction ? "production" : "sandbox",
+        clientKeyConfigured: Boolean(clientKey),
+      },
+      { status: 500 },
+    );
   }
 };

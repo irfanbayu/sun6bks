@@ -43,7 +43,10 @@ export const GET = async (request: Request) => {
 
     if (error) {
       console.error("[Cron] Failed to fetch pending transactions:", error);
-      return NextResponse.json({ error: "DB error" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     }
 
     if (!pendingTransactions || pendingTransactions.length === 0) {
@@ -117,11 +120,11 @@ export const GET = async (request: Request) => {
           `[Cron] Order ${transaction.midtrans_order_id}: ${transaction.status} -> ${nextStatus}`,
         );
       } catch (err) {
-        const errorMsg = `Order ${transaction.midtrans_order_id}: ${
-          err instanceof Error ? err.message : String(err)
-        }`;
-        errors.push(errorMsg);
-        console.error(`[Cron] Error processing ${errorMsg}`);
+        errors.push(`Order ${transaction.midtrans_order_id}: failed`);
+        console.error(
+          `[Cron] Error processing order ${transaction.midtrans_order_id}:`,
+          err,
+        );
       }
     }
 

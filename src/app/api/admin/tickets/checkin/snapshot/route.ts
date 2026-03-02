@@ -29,10 +29,11 @@ export const GET = async (request: Request) => {
     return NextResponse.json(result);
   } catch (error) {
     const status = getAuthErrorStatus(error);
+    console.error("[api/admin/tickets/checkin/snapshot] Request failed:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan server.",
+        message: "Internal server error",
       },
       { status },
     );

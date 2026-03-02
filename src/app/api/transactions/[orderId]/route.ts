@@ -89,21 +89,22 @@ const syncPendingStatus = async (transaction: {
  * Auto-syncs pending transactions with Midtrans API.
  */
 export const GET = async (request: Request, { params }: RouteContext) => {
-  const { userId } = await auth();
-  const { orderId } = params;
-  const { searchParams } = new URL(request.url);
+  try {
+    const { userId } = await auth();
+    const { orderId } = params;
+    const { searchParams } = new URL(request.url);
 
-  if (!orderId) {
-    return NextResponse.json(
-      { error: "Order ID is required" },
-      { status: 400 },
-    );
-  }
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "Order ID is required" },
+        { status: 400 },
+      );
+    }
 
-  const { data: transaction, error } = await supabaseAdmin
-    .from("transactions")
-    .select(
-      `
+    const { data: transaction, error } = await supabaseAdmin
+      .from("transactions")
+      .select(
+        `
       id,
       midtrans_order_id,
       status,
@@ -115,50 +116,57 @@ export const GET = async (request: Request, { params }: RouteContext) => {
       created_at,
       category_id
     `,
-    )
-    .eq("midtrans_order_id", orderId)
-    .single();
+      )
+      .eq("midtrans_order_id", orderId)
+      .single();
 
-  if (error || !transaction) {
+    if (error || !transaction) {
+      return NextResponse.json(
+        { error: "Transaction not found" },
+        { status: 404 },
+      );
+    }
+
+    const isOrderOwner =
+      Boolean(userId) && transaction.clerk_user_id === userId;
+    const hasValidStatusToken = verifyOrderStatusToken({
+      orderId,
+      signature: searchParams.get("sig"),
+      expiresAt: searchParams.get("exp"),
+    });
+
+    if (!isOrderOwner && !hasValidStatusToken) {
+      return NextResponse.json(
+        { error: "Transaction not found" },
+        { status: 404 },
+      );
+    }
+
+    const currentStatus = await syncPendingStatus({
+      id: transaction.id,
+      midtrans_order_id: transaction.midtrans_order_id,
+      status: transaction.status,
+      quantity: transaction.quantity,
+      category_id: transaction.category_id,
+    });
+
+    return NextResponse.json({
+      orderId: transaction.midtrans_order_id,
+      status: currentStatus,
+      amount: transaction.amount,
+      quantity: transaction.quantity,
+      paidAt:
+        currentStatus === "paid"
+          ? (transaction.paid_at ?? new Date().toISOString())
+          : transaction.paid_at,
+      expiredAt: transaction.expired_at,
+      createdAt: transaction.created_at,
+    });
+  } catch (error) {
+    console.error("[api/transactions] Request failed:", error);
     return NextResponse.json(
-      { error: "Transaction not found" },
-      { status: 404 },
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
-
-  const isOrderOwner =
-    Boolean(userId) && transaction.clerk_user_id === userId;
-  const hasValidStatusToken = verifyOrderStatusToken({
-    orderId,
-    signature: searchParams.get("sig"),
-    expiresAt: searchParams.get("exp"),
-  });
-
-  if (!isOrderOwner && !hasValidStatusToken) {
-    return NextResponse.json(
-      { error: "Transaction not found" },
-      { status: 404 },
-    );
-  }
-
-  const currentStatus = await syncPendingStatus({
-    id: transaction.id,
-    midtrans_order_id: transaction.midtrans_order_id,
-    status: transaction.status,
-    quantity: transaction.quantity,
-    category_id: transaction.category_id,
-  });
-
-  return NextResponse.json({
-    orderId: transaction.midtrans_order_id,
-    status: currentStatus,
-    amount: transaction.amount,
-    quantity: transaction.quantity,
-    paidAt:
-      currentStatus === "paid"
-        ? (transaction.paid_at ?? new Date().toISOString())
-        : transaction.paid_at,
-    expiredAt: transaction.expired_at,
-    createdAt: transaction.created_at,
-  });
 };

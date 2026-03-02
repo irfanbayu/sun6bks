@@ -75,10 +75,14 @@ export const POST = async (request: Request) => {
           message: result.message,
         });
       } catch (error) {
+        console.error(
+          "[api/admin/tickets/checkin/sync] Item sync failed:",
+          error,
+        );
         results.push({
           id: item.id,
           status: "failed_error",
-          message: "Terjadi kesalahan saat sinkronisasi item.",
+          message: "Internal server error",
         });
       }
     }
@@ -96,10 +100,11 @@ export const POST = async (request: Request) => {
     });
   } catch (error) {
     const status = getAuthErrorStatus(error);
+    console.error("[api/admin/tickets/checkin/sync] Request failed:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan server.",
+        message: "Internal server error",
         results: [],
       },
       { status },
