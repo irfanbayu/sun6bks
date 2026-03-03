@@ -58,7 +58,6 @@ sun6bks/
 │   ├── unit/
 │   ├── integration/
 │   ├── e2e/
-│   ├── smoke/
 │   ├── mocks/
 │   └── setup/
 └── .github/workflows/
@@ -162,7 +161,6 @@ npm run dev
 | `npm run test:integration` | Integration test route payment/public API |
 | `npm run test:e2e` | E2E internal flow payment |
 | `npm run test:coverage` | Coverage gate (unit + integration) |
-| `npm run test:smoke:sandbox` | Smoke test Midtrans sandbox (opsional) |
 
 ---
 
@@ -185,7 +183,6 @@ npm run dev
   - `/api/user/orders/[orderId]/detail`
   - `/api/user/orders/[orderId]/invoice`
 - `tests/e2e` untuk lifecycle internal end-to-end lintas modul
-- `tests/smoke` untuk smoke test environment eksternal/sandbox
 
 ### Coverage threshold
 
@@ -207,16 +204,6 @@ Workflow yang tersedia:
   - Menjalankan:
     - `npm run test`
     - `npm run test:coverage`
-
-- `Nightly Smoke` (`.github/workflows/nightly-smoke.yml`)
-  - Trigger: nightly (`0 0 * * *`, UTC) + manual dispatch
-  - Menjalankan:
-    - `npm run test:smoke:sandbox`
-
-Secret wajib untuk nightly smoke:
-
-- `MIDTRANS_SMOKE_BASE_URL`  
-  Contoh: `https://your-domain.vercel.app`
 
 ---
 
