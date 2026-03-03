@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
 import { processTicketCheckin } from "@/actions/admin-tickets";
-
-type CheckinRequestBody = {
-  eventId?: number;
-  ticketCode?: string;
-  note?: string | null;
-  deviceId?: string;
-};
+import { checkinSingleSchema } from "@/lib/validation/schemas";
 
 const getAuthErrorStatus = (error: unknown): number => {
   const message = error instanceof Error ? error.message : "";
@@ -17,31 +11,38 @@ const getAuthErrorStatus = (error: unknown): number => {
 
 export const POST = async (request: Request) => {
   try {
-    const body = (await request.json()) as CheckinRequestBody;
-    const eventId = Number(body.eventId);
-    const ticketCode = (body.ticketCode ?? "").trim().toUpperCase();
-    const deviceId = (body.deviceId ?? "unknown-device").trim();
-
-    if (!Number.isFinite(eventId) || eventId <= 0) {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { success: false, message: "Event ID tidak valid." },
+        { success: false, message: "Payload JSON tidak valid." },
         { status: 400 },
       );
     }
 
-    if (!ticketCode) {
+    // Input validation (zod)
+    const parseResult = checkinSingleSchema.safeParse(body);
+    if (!parseResult.success) {
+      const msg =
+        parseResult.error.flatten().formErrors[0] ??
+        parseResult.error.issues[0]?.message ??
+        "Input tidak valid.";
       return NextResponse.json(
-        { success: false, message: "Kode tiket wajib diisi." },
+        { success: false, message: msg },
         { status: 400 },
       );
     }
+    const validated = parseResult.data;
+    const ticketCode = validated.ticketCode.trim().toUpperCase();
+    const deviceId = validated.deviceId?.trim() ?? "unknown-device";
 
     const result = await processTicketCheckin({
-      eventId,
+      eventId: validated.eventId,
       ticketCode,
       action: "mark_used",
       scannedAt: new Date().toISOString(),
-      note: body.note ?? null,
+      note: validated.note ?? null,
       deviceId,
     });
 

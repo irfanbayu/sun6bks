@@ -344,6 +344,38 @@ describe("payment lifecycle e2e (internal modules)", () => {
           stock.remaining_stock -= quantity;
           return { data: { ok: true }, error: null };
         },
+        complete_paid_transaction: async (args) => {
+          const {
+            p_transaction_id: txId,
+            p_category_id: categoryId,
+            p_quantity: quantity,
+          } = args as {
+            p_transaction_id: number;
+            p_category_id: number;
+            p_quantity: number;
+          };
+          const tx = state.transactions.find((t) => t.id === txId);
+          if (!tx || tx.status !== "pending")
+            return { data: [{ success: true, message: "Already processed" }], error: null };
+          const existingTickets = state.tickets.filter((t) => t.transaction_id === txId);
+          if (existingTickets.length > 0)
+            return { data: [{ success: true, message: "Tickets already issued" }], error: null };
+          const stock = state.stocks.find((s) => s.category_id === categoryId);
+          if (!stock || stock.remaining_stock < quantity)
+            return { data: [{ success: false, message: "Insufficient stock" }], error: null };
+          tx.status = "paid";
+          tx.paid_at = new Date().toISOString();
+          stock.remaining_stock -= quantity;
+          for (let i = 0; i < quantity; i++) {
+            state.tickets.push({
+              transaction_id: txId,
+              ticket_code: `TK-E2E-${ticketCounter++}`,
+              status: "active",
+              activated_at: new Date().toISOString(),
+            });
+          }
+          return { data: [{ success: true, message: "OK" }], error: null };
+        },
       },
     });
   });

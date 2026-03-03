@@ -5,7 +5,6 @@ import {
   mapMidtransStatus,
   isValidTransition,
 } from "@/lib/midtrans/server";
-import { generateTicketCode } from "@/lib/tickets";
 
 // Opt out of pre-render so this route is only evaluated at runtime
 export const dynamic = "force-dynamic";
@@ -81,40 +80,34 @@ export const GET = async (request: Request) => {
         // Skip invalid transitions
         if (!isValidTransition(transaction.status, nextStatus)) continue;
 
-        // Update transaction
-        const updateData: Record<string, unknown> = { status: nextStatus };
-        if (nextStatus === "paid")
-          updateData.paid_at = new Date().toISOString();
-        if (nextStatus === "expired")
-          updateData.expired_at = new Date().toISOString();
-
-        await supabaseAdmin
-          .from("transactions")
-          .update(updateData)
-          .eq("id", transaction.id)
-          .eq("status", "pending"); // Optimistic lock
-
-        // If paid: create tickets + decrement stock
+        // Idempotency: paid → gunakan RPC atomic; selain itu update status saja
         if (nextStatus === "paid") {
-          await supabaseAdmin.rpc("decrement_stock", {
-            p_category_id: transaction.category_id,
-            p_quantity: transaction.quantity,
-          });
-
-          const ticketRows = Array.from(
-            { length: transaction.quantity },
-            () => ({
-              transaction_id: transaction.id,
-              ticket_code: generateTicketCode(),
-              status: "active" as const,
-              activated_at: new Date().toISOString(),
-            }),
+          const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+            "complete_paid_transaction",
+            {
+              p_transaction_id: transaction.id,
+              p_category_id: transaction.category_id,
+              p_quantity: transaction.quantity,
+            },
           );
 
-          await supabaseAdmin.from("tickets").insert(ticketRows);
-        }
+          if (!rpcError) {
+            const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+            if (result?.success) updated++;
+          }
+        } else {
+          const updateData: Record<string, unknown> = { status: nextStatus };
+          if (nextStatus === "expired")
+            updateData.expired_at = new Date().toISOString();
 
-        updated++;
+          const { error: updateError } = await supabaseAdmin
+            .from("transactions")
+            .update(updateData)
+            .eq("id", transaction.id)
+            .eq("status", "pending");
+
+          if (!updateError) updated++;
+        }
 
         console.info(
           `[Cron] Order ${transaction.midtrans_order_id}: ${transaction.status} -> ${nextStatus}`,

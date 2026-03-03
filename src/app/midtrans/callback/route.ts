@@ -5,7 +5,6 @@ import {
   mapMidtransStatus,
   isValidTransition,
 } from "@/lib/midtrans/server";
-import { generateTicketCode } from "@/lib/tickets";
 import { sendInvoiceEmail } from "@/lib/email";
 
 // Midtrans webhook notification payload type
@@ -48,7 +47,7 @@ export const POST = async (request: Request) => {
       order_id,
       status_code,
       gross_amount,
-      signature_key
+      signature_key,
     );
 
     // 2. Persist raw webhook payload (always, even if invalid)
@@ -60,9 +59,7 @@ export const POST = async (request: Request) => {
     });
 
     if (!signatureValid) {
-      console.error(
-        `[Webhook] Invalid signature for order ${order_id}`
-      );
+      console.error(`[Webhook] Invalid signature for order ${order_id}`);
       // Return 200 to avoid retry — but mark as not processed
       return NextResponse.json({ status: "invalid_signature" });
     }
@@ -76,7 +73,7 @@ export const POST = async (request: Request) => {
 
     if (txError || !transaction) {
       console.warn(
-        `[Webhook] Transaction not found for order ${order_id}. Stored payload for later.`
+        `[Webhook] Transaction not found for order ${order_id}. Stored payload for later.`,
       );
       return NextResponse.json({ status: "transaction_not_found" });
     }
@@ -87,7 +84,7 @@ export const POST = async (request: Request) => {
     // 5. Check valid transition (idempotent)
     if (!isValidTransition(transaction.status, nextStatus)) {
       console.info(
-        `[Webhook] Ignoring invalid transition ${transaction.status} -> ${nextStatus} for order ${order_id}`
+        `[Webhook] Ignoring invalid transition ${transaction.status} -> ${nextStatus} for order ${order_id}`,
       );
       // Mark webhook as processed
       await supabaseAdmin
@@ -112,76 +109,55 @@ export const POST = async (request: Request) => {
       return NextResponse.json({ status: "already_processed" });
     }
 
-    // 6. Update transaction status
-    const updateData: Record<string, unknown> = {
-      status: nextStatus,
-    };
-
+    // Idempotency: Update status + (jika paid) atomic complete via RPC
     if (nextStatus === "paid") {
-      updateData.paid_at = new Date().toISOString();
-    }
-    if (nextStatus === "expired") {
-      updateData.expired_at = new Date().toISOString();
-    }
-
-    const { error: updateError } = await supabaseAdmin
-      .from("transactions")
-      .update(updateData)
-      .eq("id", transaction.id)
-      .eq("status", transaction.status); // Optimistic lock
-
-    if (updateError) {
-      console.error(
-        `[Webhook] Failed to update transaction ${order_id}:`,
-        updateError
-      );
-      return NextResponse.json({ status: "update_failed" });
-    }
-
-    // 7. If paid: decrement stock + create tickets
-    if (nextStatus === "paid") {
-      // Decrement stock atomically
-      const { error: stockError } = await supabaseAdmin.rpc(
-        "decrement_stock",
+      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+        "complete_paid_transaction",
         {
+          p_transaction_id: transaction.id,
           p_category_id: transaction.category_id,
           p_quantity: transaction.quantity,
-        }
+        },
       );
 
-      if (stockError) {
+      if (rpcError) {
         console.error(
-          `[Webhook] Failed to decrement stock for order ${order_id}:`,
-          stockError
+          `[Webhook] complete_paid_transaction failed for order ${order_id}:`,
+          rpcError,
         );
-        // Transaction is already paid, stock decrement failed.
-        // This will be caught by reconciliation.
+        return NextResponse.json({ status: "update_failed" });
       }
 
-      // Create ticket rows
-      const ticketRows = Array.from(
-        { length: transaction.quantity },
-        () => ({
-          transaction_id: transaction.id,
-          ticket_code: generateTicketCode(),
-          status: "active" as const,
-          activated_at: new Date().toISOString(),
-        })
-      );
-
-      const { error: ticketError } = await supabaseAdmin
-        .from("tickets")
-        .insert(ticketRows);
-
-      if (ticketError) {
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+      if (result && !result.success) {
         console.error(
-          `[Webhook] Failed to create tickets for order ${order_id}:`,
-          ticketError
+          `[Webhook] complete_paid_transaction returned false for order ${order_id}:`,
+          result.message,
         );
+        return NextResponse.json({ status: "update_failed" });
       }
 
-      // Fire-and-forget: send invoice email with PDF attachment
       sendInvoiceEmail({ orderId: order_id, transactionId: transaction.id });
+    } else {
+      // expired / failed / etc — hanya update status
+      const updateData: Record<string, unknown> = { status: nextStatus };
+      if (nextStatus === "expired") {
+        updateData.expired_at = new Date().toISOString();
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("transactions")
+        .update(updateData)
+        .eq("id", transaction.id)
+        .eq("status", transaction.status);
+
+      if (updateError) {
+        console.error(
+          `[Webhook] Failed to update transaction ${order_id}:`,
+          updateError,
+        );
+        return NextResponse.json({ status: "update_failed" });
+      }
     }
 
     // 8. Mark webhook payload as processed
@@ -193,7 +169,7 @@ export const POST = async (request: Request) => {
       .limit(1);
 
     console.info(
-      `[Webhook] Order ${order_id}: ${transaction.status} -> ${nextStatus}`
+      `[Webhook] Order ${order_id}: ${transaction.status} -> ${nextStatus}`,
     );
 
     return NextResponse.json({ status: "ok" });

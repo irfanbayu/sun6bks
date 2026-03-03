@@ -24,6 +24,8 @@ import {
 import { createOrderAndSnapToken } from "@/actions/midtrans";
 import { MidtransProvider } from "@/components/providers/MidtransProvider";
 import type { MidtransSnapResult } from "@/types/midtrans";
+import type { CustomerDetailsValidated } from "@/lib/validation/schemas";
+import { customerDetailsSchema } from "@/lib/validation/schemas";
 
 export type EventData = {
   id: number;
@@ -173,25 +175,25 @@ export const BuyTicketModal = ({
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = ():
+    | { valid: true; data: CustomerDetailsValidated }
+    | { valid: false } => {
+    const result = customerDetailsSchema.safeParse(customerDetails);
+
+    if (result.success) {
+      setErrors({});
+      return { valid: true, data: result.data };
+    }
+
+    const fieldErrors = result.error.flatten().fieldErrors;
     const newErrors: Partial<CustomerDetails> = {};
 
-    if (!customerDetails.name.trim()) {
-      newErrors.name = "Nama wajib diisi";
-    }
-    if (!customerDetails.email.trim()) {
-      newErrors.email = "Email wajib diisi";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerDetails.email)) {
-      newErrors.email = "Format email tidak valid";
-    }
-    if (!customerDetails.phone.trim()) {
-      newErrors.phone = "Nomor telepon wajib diisi";
-    } else if (!/^[0-9+\-\s]{10,15}$/.test(customerDetails.phone)) {
-      newErrors.phone = "Format nomor telepon tidak valid";
-    }
+    if (fieldErrors.name?.[0]) newErrors.name = fieldErrors.name[0];
+    if (fieldErrors.email?.[0]) newErrors.email = fieldErrors.email[0];
+    if (fieldErrors.phone?.[0]) newErrors.phone = fieldErrors.phone[0];
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { valid: false };
   };
 
   const getPaymentStatusUrl = (params: {
@@ -229,7 +231,10 @@ export const BuyTicketModal = ({
       return;
     }
 
-    if (!validateForm()) return;
+    const validation = validateForm();
+    if (!validation.valid) return;
+
+    const { name, email, phone } = validation.data;
 
     setPaymentStatus("loading");
     setPaymentMessage("Memproses pembayaran...");
@@ -241,10 +246,9 @@ export const BuyTicketModal = ({
         eventTitle: event.title,
         quantity: ticketQuantity,
         pricePerTicket: event.priceNumber,
-        customerName: customerDetails.name.trim(),
-        customerEmail: customerDetails.email.trim(),
-        customerPhone: customerDetails.phone.trim(),
-        clerkUserId: user?.id,
+        customerName: name,
+        customerEmail: email,
+        customerPhone: phone,
       });
 
       if (

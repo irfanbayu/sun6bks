@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { processTicketCheckin } from "@/actions/admin-tickets";
-import type { CheckinSyncPayload } from "@/lib/checkin/types";
+import { checkinSyncSchema } from "@/lib/validation/schemas";
 
 type SyncResult = {
   id: string;
@@ -29,36 +29,33 @@ const mapResultStatus = (
 
 export const POST = async (request: Request) => {
   try {
-    const body = (await request.json()) as CheckinSyncPayload;
-    const eventId = Number(body.eventId);
-    const items = Array.isArray(body.items) ? body.items : [];
-
-    if (!Number.isFinite(eventId) || eventId <= 0) {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { success: false, message: "Event ID tidak valid.", results: [] },
+        { success: false, message: "Payload JSON tidak valid.", results: [] },
         { status: 400 },
       );
     }
 
-    if (items.length === 0) {
+    // Input validation (zod)
+    const parseResult = checkinSyncSchema.safeParse(body);
+    if (!parseResult.success) {
+      const msg =
+        parseResult.error.flatten().formErrors[0] ??
+        parseResult.error.issues[0]?.message ??
+        "Input tidak valid.";
       return NextResponse.json(
-        { success: false, message: "Tidak ada data sinkronisasi.", results: [] },
+        { success: false, message: msg, results: [] },
         { status: 400 },
       );
     }
+    const { eventId, items } = parseResult.data;
 
     const results: SyncResult[] = [];
 
     for (const item of items) {
-      if (!item.id || !item.ticketCode || !item.action) {
-        results.push({
-          id: item.id ?? "unknown",
-          status: "failed_invalid",
-          message: "Payload item tidak lengkap.",
-        });
-        continue;
-      }
-
       try {
         const result = await processTicketCheckin({
           eventId,

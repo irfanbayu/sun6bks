@@ -39,6 +39,7 @@ export type CreateTransactionParams = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  /** @deprecated Diabaikan — user ID diambil dari session server */
   clerkUserId?: string;
 };
 

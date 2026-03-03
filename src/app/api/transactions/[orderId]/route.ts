@@ -7,7 +7,6 @@ import {
   isValidTransition,
 } from "@/lib/midtrans/server";
 import { verifyOrderStatusToken } from "@/lib/security/order-status-token";
-import { generateTicketCode } from "@/lib/tickets";
 
 type RouteContext = {
   params: { orderId: string };
@@ -44,36 +43,42 @@ const syncPendingStatus = async (transaction: {
       return transaction.status;
     }
 
-    const updateData: Record<string, unknown> = { status: nextStatus };
-    if (nextStatus === "paid") updateData.paid_at = new Date().toISOString();
-    if (nextStatus === "expired")
-      updateData.expired_at = new Date().toISOString();
-
-    const { error: updateError } = await supabaseAdmin
-      .from("transactions")
-      .update(updateData)
-      .eq("id", transaction.id)
-      .eq("status", "pending");
-
-    if (updateError) {
-      console.error("[syncPendingStatus] Update error:", updateError);
-      return transaction.status;
-    }
-
     if (nextStatus === "paid") {
-      await supabaseAdmin.rpc("decrement_stock", {
-        p_category_id: transaction.category_id,
-        p_quantity: transaction.quantity,
-      });
+      // Idempotency: RPC atomic (update + stock + tickets), jangan update dulu
+      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+        "complete_paid_transaction",
+        {
+          p_transaction_id: transaction.id,
+          p_category_id: transaction.category_id,
+          p_quantity: transaction.quantity,
+        }
+      );
 
-      const ticketRows = Array.from({ length: transaction.quantity }, () => ({
-        transaction_id: transaction.id,
-        ticket_code: generateTicketCode(),
-        status: "active" as const,
-        activated_at: new Date().toISOString(),
-      }));
+      if (rpcError) {
+        console.error("[syncPendingStatus] RPC error:", rpcError);
+        return transaction.status;
+      }
 
-      await supabaseAdmin.from("tickets").insert(ticketRows);
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+      if (!result?.success) {
+        console.error("[syncPendingStatus] RPC returned failure:", result?.message);
+        return transaction.status;
+      }
+    } else {
+      const updateData: Record<string, unknown> = { status: nextStatus };
+      if (nextStatus === "expired")
+        updateData.expired_at = new Date().toISOString();
+
+      const { error: updateError } = await supabaseAdmin
+        .from("transactions")
+        .update(updateData)
+        .eq("id", transaction.id)
+        .eq("status", "pending");
+
+      if (updateError) {
+        console.error("[syncPendingStatus] Update error:", updateError);
+        return transaction.status;
+      }
     }
 
     return nextStatus;

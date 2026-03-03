@@ -106,17 +106,14 @@ describe("GET /api/transactions/[orderId]", () => {
               error: null,
             };
           }
-          if (ctx.table === "transactions" && ctx.operation === "update") {
-            return { data: [{ id: 1 }], error: null };
-          }
-          if (ctx.table === "tickets" && ctx.operation === "insert") {
-            return { data: [{ id: 11 }, { id: 12 }], error: null };
-          }
           return undefined as never;
         },
       ],
       rpc: {
-        decrement_stock: async () => ({ data: { ok: true }, error: null }),
+        complete_paid_transaction: async () => ({
+          data: [{ success: true, message: "OK" }],
+          error: null,
+        }),
       },
     });
 
@@ -129,11 +126,8 @@ describe("GET /api/transactions/[orderId]", () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("paid");
-    expect(
-      supabaseAdminMock.__calls.some(
-        (call) => call.table === "tickets" && call.operation === "insert",
-      ),
-    ).toBe(true);
+    // RPC complete_paid_transaction handles update+stock+tickets; mock returns success
+    expect(body.status).toBe("paid");
   });
 
   it("allows public signed-token access", async () => {

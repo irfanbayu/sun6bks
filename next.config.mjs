@@ -46,7 +46,6 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
-      // Allow Clerk JS SDK and runtime calls for sign-in/sign-up components.
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev",
       "connect-src 'self' https://*.supabase.co https://*.clerk.com https://*.clerk.accounts.dev https://api.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com",
       "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://app.midtrans.com https://app.sandbox.midtrans.com",

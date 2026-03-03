@@ -149,10 +149,14 @@ export const FooterSection = () => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-gray-500 md:flex-row"
         >
-          <p>© {currentYear} Standupindo Bekasi Events. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            Made with <Heart className="h-4 w-4 text-red-500" /> di Bekasi
+          <p>
+            © {currentYear} Irfan Bayu | Standupindo Bekasi. All rights
+            reserved.
           </p>
+          {/* <p className="flex items-center gap-1">
+            Made with <Heart className="h-4 w-4 text-red-500" /> to Standupindo
+            Bekasi
+          </p> */}
         </motion.div>
       </div>
 

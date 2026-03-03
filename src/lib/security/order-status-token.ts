@@ -14,9 +14,12 @@ type OrderStatusTokenResult = {
   expiresAt: number;
 };
 
+/**
+ * Secret Hygiene: Pisahkan ORDER_STATUS_TOKEN_SECRET dari CRON_SECRET.
+ * Tanpa fallback — wajib set env tersendiri.
+ */
 const getOrderStatusTokenSecret = (): string => {
-  const secret =
-    process.env.ORDER_STATUS_TOKEN_SECRET ?? process.env.CRON_SECRET ?? "";
+  const secret = process.env.ORDER_STATUS_TOKEN_SECRET ?? "";
   return secret.trim();
 };
 

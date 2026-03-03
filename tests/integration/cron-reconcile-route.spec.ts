@@ -100,17 +100,14 @@ describe("GET /api/cron/reconcile", () => {
               error: null,
             };
           }
-          if (ctx.table === "transactions" && ctx.operation === "update") {
-            return { data: [{ id: 1 }], error: null };
-          }
-          if (ctx.table === "tickets" && ctx.operation === "insert") {
-            return { data: [{ id: 5 }], error: null };
-          }
           return undefined as never;
         },
       ],
       rpc: {
-        decrement_stock: async () => ({ data: { ok: true }, error: null }),
+        complete_paid_transaction: async () => ({
+          data: [{ success: true, message: "OK" }],
+          error: null,
+        }),
       },
     });
 

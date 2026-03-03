@@ -11,26 +11,50 @@ import {
 } from "@/lib/midtrans/server";
 import { createOrderStatusToken } from "@/lib/security/order-status-token";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
+import { createOrderSchema } from "@/lib/validation/schemas";
 
 /**
  * Creates a transaction record in DB + Midtrans Snap token.
  * Does NOT activate tickets — that's the webhook's job.
  */
 export const createOrderAndSnapToken = async (
-  params: CreateTransactionParams
+  params: CreateTransactionParams,
 ): Promise<SnapTokenResponse> => {
   try {
+    // Enforce login server-side
+    const clerkUserId = await requireAuth();
+
+    // Input validation (zod schema)
+    const parseResult = createOrderSchema.safeParse({
+      eventId: params.eventId,
+      categoryId: params.categoryId,
+      eventTitle: params.eventTitle,
+      quantity: params.quantity,
+      pricePerTicket: params.pricePerTicket,
+      customerName: params.customerName,
+      customerEmail: params.customerEmail,
+      customerPhone: params.customerPhone,
+    });
+    if (!parseResult.success) {
+      const firstError = parseResult.error.flatten().fieldErrors;
+      const msg =
+        Object.values(firstError).flat().join(", ") || "Input tidak valid.";
+      return { success: false, error: msg };
+    }
+    const validated = parseResult.data;
+
     // 1. Validate event + category + stock (parallel fetch)
     const [eventResult, categoryResult] = await Promise.all([
       supabaseAdmin
         .from("events")
         .select("id, title, is_published")
-        .eq("id", params.eventId)
+        .eq("id", validated.eventId)
         .single(),
       supabaseAdmin
         .from("ticket_categories")
         .select("id, name, price, is_active, event_id")
-        .eq("id", params.categoryId)
+        .eq("id", validated.categoryId)
         .single(),
     ]);
 
@@ -46,7 +70,7 @@ export const createOrderAndSnapToken = async (
     if (!categoryResult.data.is_active) {
       return { success: false, error: "Kategori tiket tidak aktif." };
     }
-    if (categoryResult.data.event_id !== params.eventId) {
+    if (categoryResult.data.event_id !== validated.eventId) {
       return { success: false, error: "Kategori tiket tidak sesuai event." };
     }
 
@@ -54,14 +78,14 @@ export const createOrderAndSnapToken = async (
     const { data: stock, error: stockError } = await supabaseAdmin
       .from("ticket_stocks")
       .select("remaining_stock")
-      .eq("category_id", params.categoryId)
+      .eq("category_id", validated.categoryId)
       .single();
 
     if (stockError || !stock) {
       return { success: false, error: "Data stok tidak ditemukan." };
     }
 
-    if (stock.remaining_stock < params.quantity) {
+    if (stock.remaining_stock < validated.quantity) {
       return {
         success: false,
         error: `Stok tidak cukup. Tersisa ${stock.remaining_stock} tiket.`,
@@ -69,8 +93,8 @@ export const createOrderAndSnapToken = async (
     }
 
     // 3. Generate order ID & calculate amount
-    const orderId = generateOrderId(params.eventId);
-    const grossAmount = params.quantity * categoryResult.data.price;
+    const orderId = generateOrderId(validated.eventId);
+    const grossAmount = validated.quantity * categoryResult.data.price;
     const statusToken = createOrderStatusToken(orderId);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const paymentFinishUrl = `${appUrl}/payment/${orderId}?exp=${statusToken.expiresAt}&sig=${encodeURIComponent(statusToken.signature)}`;
@@ -83,20 +107,20 @@ export const createOrderAndSnapToken = async (
       },
       item_details: [
         {
-          id: `TICKET-${params.eventId}-${params.categoryId}`,
+          id: `TICKET-${validated.eventId}-${validated.categoryId}`,
           price: categoryResult.data.price,
-          quantity: params.quantity,
+          quantity: validated.quantity,
           name: `${eventResult.data.title} - ${categoryResult.data.name}`.substring(
             0,
-            50
+            50,
           ),
           category: "Tiket Event",
         },
       ],
       customer_details: {
-        first_name: params.customerName,
-        email: params.customerEmail,
-        phone: params.customerPhone,
+        first_name: validated.customerName,
+        email: validated.customerEmail,
+        phone: validated.customerPhone,
       },
       callbacks: {
         finish: paymentFinishUrl,
@@ -115,17 +139,17 @@ export const createOrderAndSnapToken = async (
       .from("transactions")
       .insert({
         midtrans_order_id: orderId,
-        event_id: params.eventId,
-        category_id: params.categoryId,
-        quantity: params.quantity,
+        event_id: validated.eventId,
+        category_id: validated.categoryId,
+        quantity: validated.quantity,
         amount: grossAmount,
         status: "pending",
         snap_token: midtransResult.token,
         snap_redirect_url: midtransResult.redirect_url,
-        customer_name: params.customerName.trim(),
-        customer_email: params.customerEmail.trim(),
-        customer_phone: params.customerPhone.trim(),
-        ...(params.clerkUserId ? { clerk_user_id: params.clerkUserId } : {}),
+        customer_name: validated.customerName,
+        customer_email: validated.customerEmail,
+        customer_phone: validated.customerPhone,
+        clerk_user_id: clerkUserId,
       });
 
     if (insertError) {
@@ -163,8 +187,7 @@ export const createOrderAndSnapToken = async (
       }
     }
 
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     return {
       success: false,

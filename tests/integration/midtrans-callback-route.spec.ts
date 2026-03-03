@@ -123,12 +123,6 @@ describe("POST /midtrans/callback", () => {
               error: null,
             };
           }
-          if (ctx.table === "transactions" && ctx.operation === "update") {
-            return { data: [{ id: 7 }], error: null };
-          }
-          if (ctx.table === "tickets" && ctx.operation === "insert") {
-            return { data: [{ id: 1 }, { id: 2 }], error: null };
-          }
           if (ctx.table === "webhook_payloads" && ctx.operation === "update") {
             return { data: [{ id: 1 }], error: null };
           }
@@ -136,7 +130,10 @@ describe("POST /midtrans/callback", () => {
         },
       ],
       rpc: {
-        decrement_stock: async () => ({ data: { ok: true }, error: null }),
+        complete_paid_transaction: async () => ({
+          data: [{ success: true, message: "OK" }],
+          error: null,
+        }),
       },
     });
 
@@ -149,10 +146,7 @@ describe("POST /midtrans/callback", () => {
       orderId: "ORDER-123",
       transactionId: 7,
     });
-    const ticketInsert = supabaseAdminMock.__calls.find(
-      (call) => call.table === "tickets" && call.operation === "insert",
-    );
-    expect(ticketInsert).toBeTruthy();
+    // complete_paid_transaction RPC handles status+stock+tickets atomically
   });
 
   it("is idempotent when same status already processed", async () => {

@@ -324,9 +324,9 @@ export const PricingSection = ({
                 </a>
               )}
 
-              {/* Hover Glow Effect */}
+              {/* Hover Glow Effect - pointer-events-none agar tidak memblokir klik tombol card sebelah */}
               {tier.popular && (
-                <div className="absolute -inset-px rounded-3xl bg-gradient-to-r from-sun6bks-gold/20 to-sun6bks-orange/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+                <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-r from-sun6bks-gold/20 to-sun6bks-orange/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
               )}
             </motion.div>
           ))}
