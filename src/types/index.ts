@@ -1,66 +1,18 @@
-// Standupindo Bekasi Events Type Definitions
+/**
+ * Standupindo Bekasi Events — Types Public Entry Point
+ *
+ * Re-export strategy: semua shared types dikonsolidasi di sini agar consumer
+ * cukup import dari "@/types". Internal structure (domain/, api/, shared/) boleh
+ * berubah; import path "@/types" tetap stabil.
+ */
 
-export type Event = {
-  id: number;
-  title: string;
-  date: string;
-  venue: string;
-  performers: Performer[];
-  price: string;
-  map: {
-    lat: number;
-    lng: number;
-  };
-  adminOnly?: boolean;
-};
+export type { Id, Nullable } from "./shared";
 
-export type Performer = {
-  name: string;
-  image: string;
-  instagram: string;
-  youtube: string;
-  description: string;
-};
+export * from "./domain/event";
 
-export type Venue = {
-  id: number;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-};
-
-/** Minimal payload for single-event landing page (server → client) */
-export type LandingTicketCategory = {
-  id: number;
-  name: string;
-  price: number;
-  description: string | null;
-  features: string[];
-  sort_order: number;
-  spotsLeft: number;
-};
-
-export type LandingEvent = {
-  id: number;
-  title: string;
-  date: string;
-  time_label: string;
-  venue: string;
-  venue_address: string | null;
-  venue_lat: number | null;
-  venue_lng: number | null;
-  venue_maps_url: string | null;
-  venue_image_url: string | null;
-  image_url: string | null;
-  performers: Performer[];
-  categories: LandingTicketCategory[];
-};
-
-// Re-export Midtrans types
 export * from "./midtrans";
 
-// Re-export DB types
+// Re-export infra types (DB/Supabase) — source of truth tetap di lib/supabase/types
 export type {
   PerformerData,
   DbEvent,
